@@ -9,6 +9,8 @@ using System.Text;
 using System.Windows.Controls;
 using System.Drawing.Imaging;
 using System.Threading;
+using IWshRuntimeLibrary;
+using System.Xaml;
 
 namespace ShortcutSync
 {
@@ -35,11 +37,7 @@ namespace ShortcutSync
                     () =>
                     {
                         // Update shortcuts of all (installed) games
-                        PlayniteApi.Database.Games.ItemUpdated -= Games_ItemUpdated;
-                        PlayniteApi.Database.Games.ItemCollectionChanged -= Games_ItemCollectionChanged;
                         UpdateShortcuts();
-                        PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
-                        PlayniteApi.Database.Games.ItemCollectionChanged += Games_ItemCollectionChanged;
                     })
             };
         }
@@ -66,7 +64,8 @@ namespace ShortcutSync
             // Update or create shortcuts for newly added games
             foreach (var game in e.AddedItems)
             {
-                UpdateShortcut(game);
+                if (((game.IsInstalled||game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
+                    UpdateShortcut(game);
             }
             // Delete shortcuts for games removed from the library
             // if only installed games should have shortcuts
@@ -91,7 +90,7 @@ namespace ShortcutSync
             {
                 // keep shortcut if game is installed or settings indicate that
                 // all shortcuts should be kept.
-                bool keepShortcut = game.NewData.IsInstalled || !settings.InstalledOnly;
+                bool keepShortcut = (game.NewData.IsInstalled || !settings.InstalledOnly) && settings.SourceOptions[game.NewData.Source.Name];
                 if (keepShortcut)
                 {
                     ThreadPool.QueueUserWorkItem( (_) =>
@@ -146,26 +145,23 @@ namespace ShortcutSync
         /// <param name="game">Game the shortcut should point to.</param>
         public void UpdateShortcut(Game game)
         {
-            settings.SourceOptions.TryGetValue(game.Source.Name, out bool createShortcut);
-            // Early exit if shortcuts disabled for this game's source
-            // or source is not set in options.
-            if (!createShortcut)
-            {
-                RemoveShortcut(game);
-                return;
-            }
-
             string path = GetShortcutPath(game);
             // determine whether to create/update the shortcut or to delete it
-            bool keepShortcut = game.IsInstalled || !settings.InstalledOnly;
+            bool keepShortcut = (game.IsInstalled||game.IsInstalling) || !settings.InstalledOnly;
             // Keep/Update shortcut
             if (keepShortcut)
             {
                 // If the shortcut already exists,
                 // exit if forceUpdate is disabled
-                if (File.Exists(path) && !settings.ForceUpdate)
+                if (System.IO.File.Exists(path))
                 {
-                    return;
+                    if (settings.ForceUpdate)
+                    {
+                        System.IO.File.Delete(path);
+                    } else
+                    {
+                        return;
+                    }
                 }
 
                 string icon = string.Empty;
@@ -175,7 +171,7 @@ namespace ShortcutSync
                     icon = PlayniteApi.Database.GetFullFilePath(game.Icon);
                 }
 
-                if (File.Exists(icon))
+                if (System.IO.File.Exists(icon))
                 {
                     if (Path.GetExtension(icon) != ".ico")
                     {
@@ -191,18 +187,25 @@ namespace ShortcutSync
                     icon = Path.Combine(PlayniteApi.Paths.ApplicationPath, "Playnite.DesktopApp.exe");
                 }
 
-                // Build shortcut string
-                StringBuilder url = new StringBuilder();
-                url.AppendLine("[InternetShortcut]");
-                url.AppendLine("IconIndex=0");
-                url.Append("IconFile=").AppendLine(icon);
-                url.Append("URL=").AppendLine($"playnite://playnite/start/{game.Id}");
-                File.WriteAllText(path, url.ToString());
+                if (settings.UsePlayAction)
+                {
+                    if (game.PlayAction.Type == GameActionType.URL)
+                    {
+                        CreateLnkURLDirect(path, icon, game);
+                    }
+                    else
+                    {
+                        CreateLnkFile(path, icon, game);
+                    }
+                } else
+                {
+                    CreateLnkURL(path, icon, game);
+                }
             }
             // Remove shortcut
             else
             {
-                if (File.Exists(path)) RemoveShortcut(game);
+                if (System.IO.File.Exists(path)) RemoveShortcut(game);
             }
 
         }
@@ -247,12 +250,12 @@ namespace ShortcutSync
                 // if it was the same icon or was converted before
                 try
                 {
-                    if (File.Exists(newPath))
+                    if (System.IO.File.Exists(newPath))
                     {
-                        File.Delete(tempIcon);
+                        System.IO.File.Delete(tempIcon);
                     } else
                     {
-                        File.Move(tempIcon, newPath);
+                        System.IO.File.Move(tempIcon, newPath);
                     }
                 }
                 catch (Exception ex)
@@ -280,7 +283,7 @@ namespace ShortcutSync
         private string GetShortcutPath(Game game)
         {
             var validName = GetSafeFileName(game.Name);
-            var path = Path.Combine(settings.ShortcutPath, validName + ".url");
+            var path = Path.Combine(settings.ShortcutPath, validName + " (" + game.Source.Name + ").lnk");
             return path;
         }
 
@@ -292,9 +295,9 @@ namespace ShortcutSync
         private void RemoveShortcut(Game game)
         {
             var path = GetShortcutPath(game);
-            if (File.Exists(path))
+            if (System.IO.File.Exists(path))
             {
-                File.Delete(path);
+                System.IO.File.Delete(path);
             }
         }
 
@@ -317,17 +320,64 @@ namespace ShortcutSync
         /// </summary>
         public void UpdateShortcuts()
         {
-            foreach (var game in PlayniteApi.Database.Games.Where(g => g.IsInstalled || !settings.InstalledOnly))
+            foreach (var game in PlayniteApi.Database.Games)
             {
-                UpdateShortcut(game);
-            }
-            if (settings.InstalledOnly)
-            {
-                foreach (var game in PlayniteApi.Database.Games.Where(g => !g.IsInstalled))
+                if (((game.IsInstalled||game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
+                {
+                    UpdateShortcut(game);
+                } else
                 {
                     RemoveShortcut(game);
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Creates a .lnk shortcut given a game with a File PlayAction.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="iconPath"></param>
+        /// <param name="game"></param>
+        public void CreateLnkFile(string path, string iconPath, Game game)
+        {
+            var shell = new WshShell();
+            var shortcut = (IWshShortcut)shell.CreateShortcut(path);
+            shortcut.IconLocation = iconPath;
+            shortcut.WorkingDirectory = PlayniteApi.ExpandGameVariables(game, game.PlayAction.WorkingDir);
+            shortcut.TargetPath = Path.Combine(shortcut.WorkingDirectory, PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path));
+            shortcut.Description = "Launch " + game.Name + " on " + game.Source.Name;
+            shortcut.Save();
+        }
+        /// <summary>
+        /// Creates a .lnk shortcut launching a game using a playnite:// url.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="iconPath"></param>
+        /// <param name="game"></param>
+        public void CreateLnkURL(string path, string iconPath, Game game)
+        {
+            var shell = new WshShell();
+            var shortcut = (IWshShortcut)shell.CreateShortcut(path);
+            shortcut.IconLocation = iconPath;
+            shortcut.TargetPath = $"playnite://playnite/start/{game.Id}";
+            shortcut.Description = "Launch " + game.Name + " on " + game.Source.Name;
+            shortcut.Save();
+        }
+        /// <summary>
+        /// Creates a .lnk shortcut given a game with a URL PlayAction.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="iconPath"></param>
+        /// <param name="game"></param>
+        public void CreateLnkURLDirect(string path, string iconPath, Game game)
+        {
+            var shell = new WshShell();
+            var shortcut = (IWshShortcut)shell.CreateShortcut(path);
+            shortcut.IconLocation = iconPath;
+            shortcut.TargetPath = game.PlayAction.Path;
+            shortcut.Description = "Launch " + game.Name + " on " + game.Source.Name;
+            shortcut.Save();
         }
     }
 }
