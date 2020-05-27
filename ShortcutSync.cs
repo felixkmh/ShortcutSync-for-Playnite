@@ -357,6 +357,7 @@ namespace ShortcutSync
         {
             var shell = new WshShell();
             var shortcut = (IWshShortcut)shell.CreateShortcut(path);
+            shortcut.Arguments = game.PlayAction.Arguments;
             shortcut.IconLocation = iconPath;
             shortcut.WorkingDirectory = PlayniteApi.ExpandGameVariables(game, game.PlayAction.WorkingDir);
             shortcut.TargetPath = Path.Combine(shortcut.WorkingDirectory, PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path));
