@@ -186,7 +186,7 @@ namespace ShortcutSync
                     icon = Path.Combine(PlayniteApi.Paths.ApplicationPath, "Playnite.DesktopApp.exe");
                 }
 
-                if (settings.UsePlayAction)
+                if (settings.UsePlayAction && game.IsInstalled)
                 {
                     if (game.PlayAction.Type == GameActionType.URL)
                     {
