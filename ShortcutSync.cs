@@ -1,16 +1,13 @@
-﻿using Playnite.SDK;
+﻿using IWshRuntimeLibrary;
+using Playnite.SDK;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Windows.Controls;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Threading;
-using IWshRuntimeLibrary;
-using System.Xaml;
+using System.Windows.Controls;
 
 namespace ShortcutSync
 {
@@ -64,7 +61,7 @@ namespace ShortcutSync
             // Update or create shortcuts for newly added games
             foreach (var game in e.AddedItems)
             {
-                if (((game.IsInstalled||game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
+                if (((game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
                     UpdateShortcut(game);
             }
             // Delete shortcuts for games removed from the library
@@ -93,27 +90,28 @@ namespace ShortcutSync
                 bool keepShortcut = (game.NewData.IsInstalled || !settings.InstalledOnly) && settings.SourceOptions[game.NewData.Source.Name];
                 if (keepShortcut)
                 {
-                    ThreadPool.QueueUserWorkItem( (_) =>
-                    {
-                        bool success = false;
-                        for (int i = 0; i < 10; ++i)
-                        {
+                    ThreadPool.QueueUserWorkItem((_) =>
+                   {
+                       bool success = false;
+                       for (int i = 0; i < 10; ++i)
+                       {
                             // Workaround because icon files are 
                             // still locked when ItemUpdated is called
                             Thread.Sleep(10);
-                            try
-                            {
-                                UpdateShortcut(game.NewData);
-                                success = true;
-                            }
-                            catch (Exception ex)
-                            {
-                                LogManager.GetLogger().Debug($"Could not convert icon. Trying again...");
-                            }
-                            if (success) break;
-                        }
-                    });
-                } else
+                           try
+                           {
+                               UpdateShortcut(game.NewData);
+                               success = true;
+                           }
+                           catch (Exception ex)
+                           {
+                               LogManager.GetLogger().Debug($"Could not convert icon. Trying again...");
+                           }
+                           if (success) break;
+                       }
+                   });
+                }
+                else
                 {
                     RemoveShortcut(game.NewData);
                 }
@@ -147,7 +145,7 @@ namespace ShortcutSync
         {
             string path = GetShortcutPath(game);
             // determine whether to create/update the shortcut or to delete it
-            bool keepShortcut = (game.IsInstalled||game.IsInstalling) || !settings.InstalledOnly;
+            bool keepShortcut = (game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly;
             // Keep/Update shortcut
             if (keepShortcut)
             {
@@ -158,7 +156,8 @@ namespace ShortcutSync
                     if (settings.ForceUpdate)
                     {
                         System.IO.File.Delete(path);
-                    } else
+                    }
+                    else
                     {
                         return;
                     }
@@ -175,7 +174,7 @@ namespace ShortcutSync
                 {
                     if (Path.GetExtension(icon) != ".ico")
                     {
-                        if(ConvertToIcon(icon, out string output))
+                        if (ConvertToIcon(icon, out string output))
                         {
                             icon = output;
                         }
@@ -197,7 +196,8 @@ namespace ShortcutSync
                     {
                         CreateLnkFile(path, icon, game);
                     }
-                } else
+                }
+                else
                 {
                     CreateLnkURL(path, icon, game);
                 }
@@ -253,7 +253,8 @@ namespace ShortcutSync
                     if (System.IO.File.Exists(newPath))
                     {
                         System.IO.File.Delete(tempIcon);
-                    } else
+                    }
+                    else
                     {
                         System.IO.File.Move(tempIcon, newPath);
                     }
@@ -263,7 +264,8 @@ namespace ShortcutSync
                     PlayniteApi.Dialogs.ShowErrorMessage(ex.Message, "Could not move converted icon");
                 }
                 output = newPath;
-            } else
+            }
+            else
             {
                 PlayniteApi.Dialogs.ShowErrorMessage($"Could not file {icon} convert to ico.", "ShortcutSync");
                 return false;
@@ -322,10 +324,11 @@ namespace ShortcutSync
         {
             foreach (var game in PlayniteApi.Database.Games)
             {
-                if (((game.IsInstalled||game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
+                if (((game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
                 {
                     UpdateShortcut(game);
-                } else
+                }
+                else
                 {
                     RemoveShortcut(game);
                 }

@@ -1,11 +1,7 @@
-﻿using Newtonsoft.Json;
-using Playnite.SDK;
-using System.Collections.Generic;
-using Playnite.SDK.Plugins;
-using Playnite.SDK.Models;
-using System.Linq;
-using System.IO;
+﻿using Playnite.SDK;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Windows.Controls;
 
 namespace ShortcutSync
@@ -14,7 +10,7 @@ namespace ShortcutSync
     {
         private readonly ShortcutSync plugin;
 
-        public string ShortcutPath { get; set; } = 
+        public string ShortcutPath { get; set; } =
             System.Environment.ExpandEnvironmentVariables(Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.StartMenu), "PlayniteGames"));
 
         public bool InstalledOnly { get; set; } = true;
@@ -26,7 +22,7 @@ namespace ShortcutSync
         // Parameterless constructor must exist if you want to use LoadPluginSettings method.
         public ShortcutSyncSettings()
         {
-            
+
         }
 
         public ShortcutSyncSettings(ShortcutSync plugin)
@@ -65,7 +61,7 @@ namespace ShortcutSync
             // Set view up
             var container = (StackPanel)plugin.settingsView.FindName("SourceSettingsStack");
             container.Children.Clear();
-            foreach(var srcOpt in SourceOptions)
+            foreach (var srcOpt in SourceOptions)
             {
                 // Add checkboxes and set some properties
                 var checkBox = new CheckBox();
@@ -97,7 +93,7 @@ namespace ShortcutSync
             var container = (StackPanel)plugin.settingsView.FindName("SourceSettingsStack");
             foreach (CheckBox checkBox in container.Children)
             {
-                SourceOptions[checkBox.Content.ToString()] = (bool) checkBox.IsChecked;
+                SourceOptions[checkBox.Content.ToString()] = (bool)checkBox.IsChecked;
             }
             // Code executed when user decides to confirm changes made since BeginEdit was called.
             plugin.SavePluginSettings(this);
