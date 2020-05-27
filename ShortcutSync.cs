@@ -327,7 +327,7 @@ namespace ShortcutSync
             {
                 if (((game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
                 {
-                    UpdateShortcut(game);
+                    UpdateShortcut(game, settings.ForceUpdate);
                 }
                 else
                 {
