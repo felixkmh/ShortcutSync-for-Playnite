@@ -18,6 +18,7 @@ namespace ShortcutSync
             System.Environment.ExpandEnvironmentVariables(Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.StartMenu), "PlayniteGames"));
 
         public bool InstalledOnly { get; set; } = true;
+        public bool UsePlayAction { get; set; } = false;
         public bool UpdateOnStartup { get; set; } = false;
         public bool ForceUpdate { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>();
@@ -44,6 +45,7 @@ namespace ShortcutSync
                 ShortcutPath = savedSettings.ShortcutPath;
                 SourceOptions = savedSettings.SourceOptions;
                 UpdateOnStartup = savedSettings.UpdateOnStartup;
+                UsePlayAction = savedSettings.UsePlayAction;
             }
         }
 

@@ -20,6 +20,7 @@
             <CheckBox Content="Installed Only" MinWidth="150" IsChecked="{Binding InstalledOnly}" HorizontalAlignment="Left"/>
             <CheckBox Content="Force Update" MinWidth="150" IsChecked="{Binding ForceUpdate}" HorizontalAlignment="Left"/>
             <CheckBox Content="Update on Startup" MinWidth="150" IsChecked="{Binding UpdateOnStartup}" HorizontalAlignment="Left"/>
+            <CheckBox Content="Use PlayAction" MinWidth="150" IsChecked="{Binding UsePlayAction}" HorizontalAlignment="Left"/>
         </StackPanel>
 
         <Label Content="Sources shortcuts are created for:"/>
