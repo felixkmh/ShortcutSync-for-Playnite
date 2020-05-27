@@ -99,6 +99,8 @@ namespace ShortcutSync
                         bool success = false;
                         for (int i = 0; i < 10; ++i)
                         {
+                            // Workaround because icon files are 
+                            // still locked when ItemUpdated is called
                             Thread.Sleep(10);
                             try
                             {
