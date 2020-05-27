@@ -62,7 +62,7 @@ namespace ShortcutSync
             foreach (var game in e.AddedItems)
             {
                 if (((game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
-                    UpdateShortcut(game);
+                    UpdateShortcut(game, settings.ForceUpdate);
             }
             // Delete shortcuts for games removed from the library
             // if only installed games should have shortcuts
@@ -90,6 +90,7 @@ namespace ShortcutSync
                 bool keepShortcut = (game.NewData.IsInstalled || !settings.InstalledOnly) && settings.SourceOptions[game.NewData.Source.Name];
                 if (keepShortcut)
                 {
+                    bool newlyInstalled = !game.OldData.IsInstalled && game.NewData.IsInstalled;
                     ThreadPool.QueueUserWorkItem((_) =>
                    {
                        bool success = false;
@@ -100,7 +101,7 @@ namespace ShortcutSync
                             Thread.Sleep(10);
                            try
                            {
-                               UpdateShortcut(game.NewData);
+                               UpdateShortcut(game.NewData, settings.ForceUpdate || newlyInstalled);
                                success = true;
                            }
                            catch (Exception ex)
@@ -141,7 +142,7 @@ namespace ShortcutSync
         /// Update or create a shortcut to a game.
         /// </summary>
         /// <param name="game">Game the shortcut should point to.</param>
-        public void UpdateShortcut(Game game)
+        public void UpdateShortcut(Game game, bool forceUpdate)
         {
             string path = GetShortcutPath(game);
             // determine whether to create/update the shortcut or to delete it
@@ -153,7 +154,7 @@ namespace ShortcutSync
                 // exit if forceUpdate is disabled
                 if (System.IO.File.Exists(path))
                 {
-                    if (settings.ForceUpdate)
+                    if (forceUpdate)
                     {
                         System.IO.File.Delete(path);
                     }
