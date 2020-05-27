@@ -208,6 +208,8 @@ namespace ShortcutSync
         /// <summary>
         /// Converts an image into an icon in the same folder as the 
         /// source image naming it with its MD5 hash.
+        /// Mostly taken from the ConvertToIcon implementation
+        /// in Playnite.Common
         /// </summary>
         /// <param name="icon">Full path to the source image to convert.</param>
         /// <returns>Whether conversion succeded.</returns>
