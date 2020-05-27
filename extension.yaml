@@ -1,0 +1,9 @@
+﻿Name: ShortcutSync
+Author: felixkmh
+Version: 1.0
+Module: ShortcutSync.dll
+Type: GenericPlugin
+Icon: icon.png
+Functions:
+    - Description: Update ShortcutSync
+      FucntionName: UpdateShortcuts

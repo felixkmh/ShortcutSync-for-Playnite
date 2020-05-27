@@ -1,0 +1,29 @@
+﻿<UserControl x:Class="ShortcutSync.ShortcutSyncSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="400" d:DesignWidth="600">
+    <StackPanel Margin="5">
+        <Label Content="Shortcut Path:"/>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox Text="{Binding ShortcutPath}" Grid.Column="0" x:Name="PathTextBox"/>
+            <Button x:Name="SelectFolderButton" Content="Select Folder" Grid.Column="1" HorizontalAlignment="Stretch" Margin="6,0,0,0" BorderThickness="1" Padding="3,1"/>
+
+        </Grid>
+        <StackPanel Margin="0,5" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <CheckBox Content="Installed Only" MinWidth="150" IsChecked="{Binding InstalledOnly}" HorizontalAlignment="Left"/>
+            <CheckBox Content="Force Update" MinWidth="150" IsChecked="{Binding ForceUpdate}" HorizontalAlignment="Left"/>
+            <CheckBox Content="Update on Startup" MinWidth="150" IsChecked="{Binding UpdateOnStartup}" HorizontalAlignment="Left"/>
+        </StackPanel>
+
+        <Label Content="Sources shortcuts are created for:"/>
+        <StackPanel x:Name="SourceSettingsStack" HorizontalAlignment="Left" Margin="0,5" VerticalAlignment="Top"/>
+
+    </StackPanel>
+</UserControl>
