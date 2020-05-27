@@ -104,7 +104,7 @@ namespace ShortcutSync
                                UpdateShortcut(game.NewData, settings.ForceUpdate || newlyInstalled);
                                success = true;
                            }
-                           catch (Exception ex)
+                           catch (Exception)
                            {
                                LogManager.GetLogger().Debug($"Could not convert icon. Trying again...");
                            }
