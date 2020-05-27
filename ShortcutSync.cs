@@ -93,14 +93,20 @@ namespace ShortcutSync
         /// <param name="e"></param>
         private void Games_ItemUpdated(object sender, ItemUpdatedEventArgs<Game> e)
         {
-            foreach (var game in e.UpdatedItems)
+            foreach (var change in e.UpdatedItems)
             {
+                // Don't update shortcur if the game was only closed or launched
+                if (WasLaunchedOrClosed(change))
+                {
+                    return;
+                }
+
                 // keep shortcut if game is installed or settings indicate that
                 // all shortcuts should be kept.
-                bool keepShortcut = (game.NewData.IsInstalled || !settings.InstalledOnly) && settings.SourceOptions[game.NewData.Source.Name];
+                bool keepShortcut = (change.NewData.IsInstalled || !settings.InstalledOnly) && settings.SourceOptions[change.NewData.Source.Name];
                 if (keepShortcut)
                 {
-                    bool newlyInstalled = !game.OldData.IsInstalled && game.NewData.IsInstalled;
+                    bool newlyInstalled = !change.OldData.IsInstalled && change.NewData.IsInstalled;
                     ThreadPool.QueueUserWorkItem((_) =>
                    {
                        bool success = false;
@@ -111,7 +117,7 @@ namespace ShortcutSync
                             Thread.Sleep(10);
                            try
                            {
-                               UpdateShortcut(game.NewData, settings.ForceUpdate || newlyInstalled);
+                               UpdateShortcut(change.NewData, settings.ForceUpdate || newlyInstalled);
                                success = true;
                            }
                            catch (Exception)
@@ -124,7 +130,7 @@ namespace ShortcutSync
                 }
                 else
                 {
-                    RemoveShortcut(game.NewData);
+                    RemoveShortcut(change.NewData);
                 }
             }
         }
@@ -346,6 +352,11 @@ namespace ShortcutSync
             }
         }
 
+        private bool WasLaunchedOrClosed(ItemUpdateEvent<Game> data)
+        {
+            return ( data.NewData.IsRunning && !data.OldData.IsRunning) || ( data.NewData.IsLaunching && !data.OldData.IsLaunching) ||
+                   (!data.NewData.IsRunning &&  data.OldData.IsRunning) || (!data.NewData.IsLaunching &&  data.OldData.IsLaunching);
+        }
 
         /// <summary>
         /// Creates a .lnk shortcut given a game with a File PlayAction.
