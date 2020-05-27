@@ -30,11 +30,21 @@ namespace ShortcutSync
             return new List<ExtensionFunction>
             {
                 new ExtensionFunction(
-                    "Update Start Menu Shortcuts",
+                    "Update All Shortcuts",
                     () =>
                     {
                         // Update shortcuts of all (installed) games
                         UpdateShortcuts();
+                    }),
+                new ExtensionFunction(
+                    "Update Selected Shortcuts",
+                    () =>
+                    {
+                        foreach (var game in PlayniteApi.MainView.SelectedGames)
+                        {
+                            // Update shortcuts of selected games
+                            UpdateShortcut(game, settings.ForceUpdate);
+                        }
                     })
             };
         }

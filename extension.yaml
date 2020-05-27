@@ -4,6 +4,3 @@ Version: 1.2
 Module: ShortcutSync.dll
 Type: GenericPlugin
 Icon: icon.png
-Functions:
-    - Description: Update ShortcutSync
-      FucntionName: UpdateShortcuts
