@@ -182,6 +182,7 @@ namespace ShortcutSync
             string path = GetShortcutPath(game);
             settings.SourceOptions.TryGetValue(game.Source.Name, out bool sourceEnabled);
             // determine whether to create/update the shortcut or to delete it
+            bool shortcutExists = System.IO.File.Exists(path);
             bool exludeBecauseHidden = settings.ExcludeHidden && game.Hidden;
             bool keepShortcut = 
                (game.IsInstalled  || 
@@ -191,7 +192,6 @@ namespace ShortcutSync
             // Keep/Update shortcut
             if (keepShortcut)
             {
-                bool shortcutExists = System.IO.File.Exists(path);
                 bool willCreateShortcut = !shortcutExists || forceUpdate;
                 if (willCreateShortcut)
                 {
@@ -210,8 +210,11 @@ namespace ShortcutSync
             // Remove shortcut
             else
             {
-                RemoveShortcut(game);
-                status = UpdateStatus.Deleted;
+                if (shortcutExists)
+                {
+                    RemoveShortcut(game);
+                    status = UpdateStatus.Deleted;
+                }
             }
             return status;
         }
