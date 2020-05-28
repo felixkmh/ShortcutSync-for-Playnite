@@ -3,10 +3,13 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 
 namespace ShortcutSync
@@ -14,7 +17,7 @@ namespace ShortcutSync
     public class ShortcutSync : Plugin
     {
         private static readonly ILogger logger = LogManager.GetLogger();
-
+        private Thread thread;
         private ShortcutSyncSettings settings { get; set; }
         public ShortcutSyncSettingsView settingsView { get; set; }
 
@@ -40,11 +43,16 @@ namespace ShortcutSync
                     "Update Selected Shortcuts",
                     () =>
                     {
-                        foreach (var game in PlayniteApi.MainView.SelectedGames)
+                        thread?.Join();
+                        thread = new Thread(() =>
                         {
-                            // Update shortcuts of selected games
-                            UpdateShortcut(game, settings.ForceUpdate);
-                        }
+                            foreach (var game in PlayniteApi.MainView.SelectedGames)
+                            {
+                                // Update shortcuts of selected games
+                                UpdateShortcut(game, true);
+                            }
+                        });
+                        thread.Start();
                     })
             };
         }
@@ -140,6 +148,7 @@ namespace ShortcutSync
             // Unsubscribe from library change events.
             PlayniteApi.Database.Games.ItemUpdated -= Games_ItemUpdated;
             PlayniteApi.Database.Games.ItemCollectionChanged -= Games_ItemCollectionChanged;
+            thread?.Join();
         }
 
 
@@ -339,17 +348,24 @@ namespace ShortcutSync
         /// </summary>
         public void UpdateShortcuts()
         {
-            foreach (var game in PlayniteApi.Database.Games)
+            // Updatind all games can take some time
+            // execute in a task so main thread is not blocked.
+            thread?.Join();
+            thread = new Thread(() =>
             {
-                if (((game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
+                foreach(var game in PlayniteApi.Database.Games)
                 {
-                    UpdateShortcut(game, settings.ForceUpdate);
+                    if (((game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
+                    {
+                        UpdateShortcut(game, settings.ForceUpdate);
+                    }
+                    else
+                    {
+                        RemoveShortcut(game);
+                    }
                 }
-                else
-                {
-                    RemoveShortcut(game);
-                }
-            }
+            });
+            thread.Start();
         }
 
         private bool WasLaunchedOrClosed(ItemUpdateEvent<Game> data)
