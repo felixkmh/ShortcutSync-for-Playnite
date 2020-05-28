@@ -211,7 +211,7 @@ namespace ShortcutSync
                 {
                     if (forceUpdate)
                     {
-                        System.IO.File.Delete(path);
+                        // System.IO.File.Delete(path);
                         status = UpdateStatus.Updated;
                     }
                     else
@@ -245,13 +245,19 @@ namespace ShortcutSync
 
                 if (settings.UsePlayAction && game.IsInstalled)
                 {
-                    if (game.PlayAction.Type == GameActionType.URL)
+                    if (game.Source.Name == "Xbox")
                     {
-                        CreateLnkURLDirect(path, icon, game);
-                    }
-                    else
+                        CreateLnkFileXbox(path, icon, game);
+                    } else
                     {
-                        CreateLnkFile(path, icon, game);
+                        if (game.PlayAction.Type == GameActionType.URL)
+                        {
+                            CreateLnkURLDirect(path, icon, game);
+                        }
+                        else
+                        {
+                            CreateLnkFile(path, icon, game);
+                        }
                     }
                 }
                 else
@@ -469,6 +475,25 @@ namespace ShortcutSync
                 workingDirectory: workingDirectory,
                 arguments: game.PlayAction.Arguments);
         }
+
+        /// <summary>
+        /// Creates a .lnk shortcut given a game with a File PlayAction.
+        /// Specialized for Windows UWP apps.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="iconPath"></param>
+        /// <param name="game"></param>
+        public void CreateLnkFileXbox(string path, string iconPath, Game game)
+        {
+            string targetPath = PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path);
+            CreateLnk(
+                shortcutPath: path,
+                targetPath: @"C:Windows\explorer.exe",
+                iconPath: iconPath,
+                description: "Launch " + game.Name + " on " + game.Source.Name + ".",
+                workingDirectory: "Applications",
+                arguments: game.PlayAction.Arguments);
+        }
         /// <summary>
         /// Creates a .lnk shortcut launching a game using a playnite:// url.
         /// </summary>
@@ -509,7 +534,7 @@ namespace ShortcutSync
         /// <param name="arguments">Optional launch argurments.</param>
         public void CreateLnk(
             string shortcutPath, string targetPath, string iconPath, 
-            string description, string workingDirectory = null, string arguments = null)
+            string description, string workingDirectory = "", string arguments = "")
         {
             try
             {
@@ -518,14 +543,8 @@ namespace ShortcutSync
                 shortcut.IconLocation = iconPath;
                 shortcut.TargetPath = targetPath;
                 shortcut.Description = description;
-                if (!string.IsNullOrEmpty(workingDirectory))
-                {
-                    shortcut.WorkingDirectory = workingDirectory;
-                }
-                if (!string.IsNullOrEmpty(arguments))
-                {
-                    shortcut.Arguments = arguments;
-                }
+                shortcut.WorkingDirectory = workingDirectory;
+                shortcut.Arguments = arguments;
                 shortcut.Save();
             }
             catch (Exception ex)
