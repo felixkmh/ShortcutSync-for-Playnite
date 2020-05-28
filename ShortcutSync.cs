@@ -106,17 +106,7 @@ namespace ShortcutSync
             // Update or create shortcuts for newly added games
             foreach (var game in e.AddedItems)
             {
-                if (((game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
-                    UpdateShortcut(game, settings.ForceUpdate);
-            }
-            // Delete shortcuts for games removed from the library
-            // if only installed games should have shortcuts
-            if (settings.InstalledOnly)
-            {
-                foreach (var game in e.RemovedItems)
-                {
-                    RemoveShortcut(game);
-                }
+                UpdateShortcut(game, settings.ForceUpdate);
             }
         }
 
@@ -130,43 +120,33 @@ namespace ShortcutSync
         {
             foreach (var change in e.UpdatedItems)
             {
-                // Don't update shortcur if the game was only closed or launched
+                // Don't update shortcut if the game was only closed or launched
                 if (WasLaunchedOrClosed(change))
                 {
                     return;
                 }
 
-                // keep shortcut if game is installed or settings indicate that
-                // all shortcuts should be kept.
-                bool keepShortcut = (change.NewData.IsInstalled || !settings.InstalledOnly) && settings.SourceOptions[change.NewData.Source.Name];
-                if (keepShortcut)
+                ThreadPool.QueueUserWorkItem((_) =>
                 {
-                    bool newlyInstalled = !change.OldData.IsInstalled && change.NewData.IsInstalled;
-                    ThreadPool.QueueUserWorkItem((_) =>
-                   {
-                       bool success = false;
-                       for (int i = 0; i < 10; ++i)
-                       {
-                            // Workaround because icon files are 
-                            // still locked when ItemUpdated is called
-                            Thread.Sleep(10);
-                           try
-                           {
-                               UpdateShortcut(change.NewData, settings.ForceUpdate || newlyInstalled);
-                               success = true;
-                           }
-                           catch (Exception)
-                           {
-                               LogManager.GetLogger().Debug($"Could not convert icon. Trying again...");
-                           }
-                           if (success) break;
-                       }
-                   });
-                }
-                else
-                {
-                    RemoveShortcut(change.NewData);
-                }
+                    bool success = false;
+                    for (int i = 0; i < 10; ++i)
+                    {
+                        // Workaround because icon files are 
+                        // still locked when ItemUpdated is called
+                        Thread.Sleep(10);
+                        try
+                        {
+                            UpdateShortcut(change.NewData, settings.ForceUpdate);
+                            success = true;
+                        }
+                        catch (Exception)
+                        {
+                            LogManager.GetLogger().Debug($"Could not convert icon. Trying again...");
+                        }
+                        if (success) break;
+                    }
+                });
+
             }
         }
 
@@ -191,91 +171,104 @@ namespace ShortcutSync
         }
 
         /// <summary>
-        /// Update or create a shortcut to a game.
+        /// Update, create or remove a shortcut to a game.
         /// </summary>
         /// <param name="game">Game the shortcut should point to.</param>
         /// <param name="forceUpdate">If true, existing shortcut will be overwritten.</param>
         /// <returns>Status of the associated shortcut.</returns>
         public UpdateStatus UpdateShortcut(Game game, bool forceUpdate)
         {
-            UpdateStatus status = UpdateStatus.Created;
+            UpdateStatus status = UpdateStatus.None;
             string path = GetShortcutPath(game);
+            settings.SourceOptions.TryGetValue(game.Source.Name, out bool sourceEnabled);
             // determine whether to create/update the shortcut or to delete it
-            bool keepShortcut = (game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly;
+            bool exludeBecauseHidden = settings.ExcludeHidden && game.Hidden;
+            bool keepShortcut = 
+               (game.IsInstalled  || 
+                !settings.InstalledOnly) &&
+                sourceEnabled &&
+                !exludeBecauseHidden;
             // Keep/Update shortcut
             if (keepShortcut)
             {
-                // If the shortcut already exists,
-                // exit if forceUpdate is disabled
-                if (System.IO.File.Exists(path))
+                bool shortcutExists = System.IO.File.Exists(path);
+                bool willCreateShortcut = !shortcutExists || forceUpdate;
+                if (willCreateShortcut)
                 {
-                    if (forceUpdate)
+                    // Assign status accordingly
+                    if (shortcutExists)
                     {
-                        // System.IO.File.Delete(path);
                         status = UpdateStatus.Updated;
-                    }
-                    else
-                    {
-                        return UpdateStatus.None;
-                    }
-                }
-
-                string icon = string.Empty;
-
-                if (!string.IsNullOrEmpty(game.Icon))
-                {
-                    icon = PlayniteApi.Database.GetFullFilePath(game.Icon);
-                }
-
-                if (System.IO.File.Exists(icon))
-                {
-                    if (Path.GetExtension(icon) != ".ico")
-                    {
-                        if (ConvertToIcon(icon, out string output))
-                        {
-                            icon = output;
-                        }
-                    }
-                }
-                // If no icon was found, use a fallback icon.
-                else if (String.IsNullOrEmpty(icon))
-                {
-                    icon = Path.Combine(PlayniteApi.Paths.ApplicationPath, "Playnite.DesktopApp.exe");
-                }
-
-                if (settings.UsePlayAction && game.IsInstalled)
-                {
-                    if (game.Source.Name == "Xbox")
-                    {
-                        CreateLnkFileXbox(path, icon, game);
                     } else
                     {
-                        if (game.PlayAction.Type == GameActionType.URL)
-                        {
-                            CreateLnkURLDirect(path, icon, game);
-                        }
-                        else
-                        {
-                            CreateLnkFile(path, icon, game);
-                        }
+                        status = UpdateStatus.Created;
                     }
+                    CreateShortcut(game, path);
                 }
-                else
-                {
-                    CreateLnkURL(path, icon, game);
-                }
+
             }
             // Remove shortcut
             else
             {
-                status = UpdateStatus.None;
-                if (System.IO.File.Exists(path))
-                {
-                    RemoveShortcut(game);
-                    status = UpdateStatus.Deleted;
-                }
+                RemoveShortcut(game);
+                status = UpdateStatus.Deleted;
             }
             return status;
+        }
+
+        /// <summary>
+        /// Create shortcut for a game at a given location.
+        /// </summary>
+        /// <param name="game">Game the shortcut should launch.</param>
+        /// <param name="shortcutPath">Full path to the shortcut location.</param>
+        public void CreateShortcut(Game game, string shortcutPath)
+        {
+            string icon = string.Empty;
+
+            if (!string.IsNullOrEmpty(game.Icon))
+            {
+                icon = PlayniteApi.Database.GetFullFilePath(game.Icon);
+            }
+
+            if (System.IO.File.Exists(icon))
+            {
+                if (Path.GetExtension(icon) != ".ico")
+                {
+                    if (ConvertToIcon(icon, out string output))
+                    {
+                        icon = output;
+                    }
+                }
+            }
+            // If no icon was found, use a fallback icon.
+            else if (String.IsNullOrEmpty(icon))
+            {
+                icon = Path.Combine(PlayniteApi.Paths.ApplicationPath, "Playnite.DesktopApp.exe");
+            }
+            // Creat playnite URI if game is not installed
+            // or if Use PlayAction option is disabled
+            if (!game.IsInstalled || !settings.UsePlayAction)
+            {
+                CreateLnkURL(shortcutPath, icon, game);
+            } 
+            else 
+            {
+                if (game.Source.Name == "Xbox")
+                {
+                    CreateLnkFileXbox(shortcutPath, icon, game);
+                }
+                else
+                {
+                    if (game.PlayAction.Type == GameActionType.URL)
+                    {
+                        CreateLnkURLDirect(shortcutPath, icon, game);
+                    }
+                    else
+                    {
+                        CreateLnkFile(shortcutPath, icon, game);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -410,29 +403,19 @@ namespace ShortcutSync
                 int created = 0;
                 foreach (var game in PlayniteApi.Database.Games)
                 {
-                    if (((game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
+                    switch (UpdateShortcut(game, settings.ForceUpdate))
                     {
-                        switch (UpdateShortcut(game, settings.ForceUpdate))
-                        {
-                            case UpdateStatus.Updated:
-                                updated++;
-                                break;
-                            case UpdateStatus.Deleted:
-                                removed++;
-                                break;
-                            case UpdateStatus.Created:
-                                created++;
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        if (RemoveShortcut(game))
-                        {
+                        case UpdateStatus.Updated:
+                            updated++;
+                            break;
+                        case UpdateStatus.Deleted:
                             removed++;
-                        }
+                            break;
+                        case UpdateStatus.Created:
+                            created++;
+                            break;
+                        default:
+                            break;
                     }
                 }
                 LogInfo($"Updated: {updated}, created: {created}, removed: {removed}");
@@ -447,7 +430,7 @@ namespace ShortcutSync
         /// </summary>
         /// <param name="data">The event data of the changed game.</param>
         /// <returns></returns>
-        private bool WasLaunchedOrClosed(ItemUpdateEvent<Game> data)
+        private static bool WasLaunchedOrClosed(ItemUpdateEvent<Game> data)
         {
             return ( data.NewData.IsRunning && !data.OldData.IsRunning) || ( data.NewData.IsLaunching && !data.OldData.IsLaunching) ||
                    (!data.NewData.IsRunning &&  data.OldData.IsRunning) || (!data.NewData.IsLaunching &&  data.OldData.IsLaunching);

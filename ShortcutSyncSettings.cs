@@ -17,6 +17,7 @@ namespace ShortcutSync
         public bool UsePlayAction { get; set; } = false;
         public bool UpdateOnStartup { get; set; } = false;
         public bool ForceUpdate { get; set; } = false;
+        public bool ExcludeHidden { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>();
 
         // Parameterless constructor must exist if you want to use LoadPluginSettings method.
@@ -42,6 +43,7 @@ namespace ShortcutSync
                 SourceOptions = savedSettings.SourceOptions;
                 UpdateOnStartup = savedSettings.UpdateOnStartup;
                 UsePlayAction = savedSettings.UsePlayAction;
+                ExcludeHidden = savedSettings.ExcludeHidden;
             }
         }
 
