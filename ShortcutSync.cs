@@ -23,6 +23,14 @@ namespace ShortcutSync
 
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
+        public enum UpdateStatus
+        {
+            None,
+            Updated,
+            Deleted,
+            Created
+        }
+
         public ShortcutSync(IPlayniteAPI api) : base(api)
         {
             settings = new ShortcutSyncSettings(this);
@@ -40,18 +48,35 @@ namespace ShortcutSync
                         UpdateShortcuts();
                     }),
                 new ExtensionFunction(
-                    "Update Selected Shortcuts",
+                    "Force Update Selected Shortcuts",
                     () =>
                     {
                         thread?.Join();
                         thread = new Thread(() =>
                         {
                             PlayniteApi.Database.Games.BeginBufferUpdate();
+                            int removed = 0;
+                            int updated = 0;
+                            int created = 0;
                             foreach (var game in PlayniteApi.MainView.SelectedGames)
                             {
                                 // Update shortcuts of selected games
-                                UpdateShortcut(game, true);
+                                switch (UpdateShortcut(game, true))
+                                {
+                                    case UpdateStatus.Updated:
+                                        updated++;
+                                        break;
+                                    case UpdateStatus.Deleted:
+                                        removed++;
+                                        break;
+                                    case UpdateStatus.Created:
+                                        created++;
+                                        break;
+                                    default:
+                                        break;
+                                }
                             }
+                            LogInfo($"Updated: {updated}, created: {created}, removed: {removed}");
                             PlayniteApi.Database.Games.EndBufferUpdate();
                         });
                         thread.Start();
@@ -169,8 +194,11 @@ namespace ShortcutSync
         /// Update or create a shortcut to a game.
         /// </summary>
         /// <param name="game">Game the shortcut should point to.</param>
-        public void UpdateShortcut(Game game, bool forceUpdate)
+        /// <param name="forceUpdate">If true, existing shortcut will be overwritten.</param>
+        /// <returns>Status of the associated shortcut.</returns>
+        public UpdateStatus UpdateShortcut(Game game, bool forceUpdate)
         {
+            UpdateStatus status = UpdateStatus.Created;
             string path = GetShortcutPath(game);
             // determine whether to create/update the shortcut or to delete it
             bool keepShortcut = (game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly;
@@ -184,10 +212,11 @@ namespace ShortcutSync
                     if (forceUpdate)
                     {
                         System.IO.File.Delete(path);
+                        status = UpdateStatus.Updated;
                     }
                     else
                     {
-                        return;
+                        return UpdateStatus.None;
                     }
                 }
 
@@ -233,9 +262,14 @@ namespace ShortcutSync
             // Remove shortcut
             else
             {
-                if (System.IO.File.Exists(path)) RemoveShortcut(game);
+                status = UpdateStatus.None;
+                if (System.IO.File.Exists(path))
+                {
+                    RemoveShortcut(game);
+                    status = UpdateStatus.Deleted;
+                }
             }
-
+            return status;
         }
 
         /// <summary>
@@ -244,7 +278,8 @@ namespace ShortcutSync
         /// Mostly taken from the ConvertToIcon implementation
         /// in Playnite.Common
         /// </summary>
-        /// <param name="icon">Full path to the source image to convert.</param>
+        /// <param name="icon">Full path to the source image.</param>
+        /// <param name="output">Full path to the output file on success.</param>
         /// <returns>Whether conversion succeded.</returns>
         private bool ConvertToIcon(string icon, out string output)
         {
@@ -257,7 +292,7 @@ namespace ShortcutSync
             }
             catch (IOException ex)
             {
-                PlayniteApi.Dialogs.ShowErrorMessage(ex.Message, "Could not create temporary file.");
+                LogError("Could not create temporary file. Exception: " + ex.Message);
                 return false;
             }
             bool success = false;
@@ -267,7 +302,7 @@ namespace ShortcutSync
             }
             catch (Exception ex)
             {
-                LogManager.GetLogger().Debug($"Could not convert icon {icon}");
+                LogManager.GetLogger().Debug($"Could not convert icon {icon}. Exception: " + ex.Message);
                 throw ex;
             }
             if (success)
@@ -289,13 +324,13 @@ namespace ShortcutSync
                 }
                 catch (Exception ex)
                 {
-                    PlayniteApi.Dialogs.ShowErrorMessage(ex.Message, "Could not move converted icon");
+                    LogError($"Could not move converted icon to \"{newPath}\". Exception: {ex.Message}");
                 }
                 output = newPath;
             }
             else
             {
-                PlayniteApi.Dialogs.ShowErrorMessage($"Could not file {icon} convert to ico.", "ShortcutSync");
+                LogError($"Could not convert file \"{icon}\" to ico.");
                 return false;
             }
 
@@ -307,13 +342,14 @@ namespace ShortcutSync
         /// game's name and the path in the settings.
         /// </summary>
         /// <param name="game">The game the shortcut will point to.</param>
+        /// <param name="extension">Filename extension including ".".</param>
         /// <returns>
         /// String containing path and file name for the .url shortcut.
         /// </returns>
-        private string GetShortcutPath(Game game)
+        private string GetShortcutPath(Game game, string extension = ".lnk")
         {
             var validName = GetSafeFileName(game.Name);
-            var path = Path.Combine(settings.ShortcutPath, validName + " (" + game.Source.Name + ").lnk");
+            var path = Path.Combine(settings.ShortcutPath, validName + " (" + game.Source.Name + ")" + extension);
             return path;
         }
 
@@ -322,12 +358,16 @@ namespace ShortcutSync
         /// if it exists.
         /// </summary>
         /// <param name="game">The game the shortcut points to.</param>
-        private void RemoveShortcut(Game game)
+        private bool RemoveShortcut(Game game)
         {
             var path = GetShortcutPath(game);
             if (System.IO.File.Exists(path))
             {
                 System.IO.File.Delete(path);
+                return true;
+            } else
+            {
+                return false;
             }
         }
 
@@ -359,22 +399,48 @@ namespace ShortcutSync
                 // changes during this process will be handled
                 // by the events afterwards
                 PlayniteApi.Database.Games.BeginBufferUpdate();
+                int removed = 0;
+                int updated = 0;
+                int created = 0;
                 foreach (var game in PlayniteApi.Database.Games)
                 {
                     if (((game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
                     {
-                        UpdateShortcut(game, settings.ForceUpdate);
+                        switch (UpdateShortcut(game, settings.ForceUpdate))
+                        {
+                            case UpdateStatus.Updated:
+                                updated++;
+                                break;
+                            case UpdateStatus.Deleted:
+                                removed++;
+                                break;
+                            case UpdateStatus.Created:
+                                created++;
+                                break;
+                            default:
+                                break;
+                        }
                     }
                     else
                     {
-                        RemoveShortcut(game);
+                        if (RemoveShortcut(game))
+                        {
+                            removed++;
+                        }
                     }
                 }
+                LogInfo($"Updated: {updated}, created: {created}, removed: {removed}");
                 PlayniteApi.Database.Games.EndBufferUpdate();
             });
             thread.Start();
         }
 
+        /// <summary>
+        /// Checks whether a game entry changes because it
+        /// was launched or closed.
+        /// </summary>
+        /// <param name="data">The event data of the changed game.</param>
+        /// <returns></returns>
         private bool WasLaunchedOrClosed(ItemUpdateEvent<Game> data)
         {
             return ( data.NewData.IsRunning && !data.OldData.IsRunning) || ( data.NewData.IsLaunching && !data.OldData.IsLaunching) ||
@@ -389,14 +455,19 @@ namespace ShortcutSync
         /// <param name="game"></param>
         public void CreateLnkFile(string path, string iconPath, Game game)
         {
-            var shell = new WshShell();
-            var shortcut = (IWshShortcut)shell.CreateShortcut(path);
-            shortcut.Arguments = game.PlayAction.Arguments;
-            shortcut.IconLocation = iconPath;
-            shortcut.WorkingDirectory = PlayniteApi.ExpandGameVariables(game, game.PlayAction.WorkingDir);
-            shortcut.TargetPath = Path.Combine(shortcut.WorkingDirectory, PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path));
-            shortcut.Description = "Launch " + game.Name + " on " + game.Source.Name;
-            shortcut.Save();
+            string workingDirectory = PlayniteApi.ExpandGameVariables(game, game.PlayAction.WorkingDir);
+            string targetPath = PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path);
+            if (!string.IsNullOrEmpty(workingDirectory))
+            {
+                targetPath = Path.Combine(workingDirectory, targetPath);
+            }
+            CreateLnk(
+                shortcutPath: path,
+                targetPath: targetPath,
+                iconPath: iconPath,
+                description: "Launch " + game.Name + " on " + game.Source.Name + ".",
+                workingDirectory: workingDirectory,
+                arguments: game.PlayAction.Arguments);
         }
         /// <summary>
         /// Creates a .lnk shortcut launching a game using a playnite:// url.
@@ -406,12 +477,11 @@ namespace ShortcutSync
         /// <param name="game"></param>
         public void CreateLnkURL(string path, string iconPath, Game game)
         {
-            var shell = new WshShell();
-            var shortcut = (IWshShortcut)shell.CreateShortcut(path);
-            shortcut.IconLocation = iconPath;
-            shortcut.TargetPath = $"playnite://playnite/start/{game.Id}";
-            shortcut.Description = "Launch " + game.Name + " on " + game.Source.Name;
-            shortcut.Save();
+            CreateLnk(
+                shortcutPath: path,
+                targetPath: $"playnite://playnite/start/{game.Id}",
+                iconPath: iconPath,
+                description: "Launch " + game.Name + " on " + game.Source.Name + " via Playnite.");
         }
         /// <summary>
         /// Creates a .lnk shortcut given a game with a URL PlayAction.
@@ -421,12 +491,117 @@ namespace ShortcutSync
         /// <param name="game"></param>
         public void CreateLnkURLDirect(string path, string iconPath, Game game)
         {
-            var shell = new WshShell();
-            var shortcut = (IWshShortcut)shell.CreateShortcut(path);
-            shortcut.IconLocation = iconPath;
-            shortcut.TargetPath = game.PlayAction.Path;
-            shortcut.Description = "Launch " + game.Name + " on " + game.Source.Name;
-            shortcut.Save();
+            CreateLnk(
+                shortcutPath: path,
+                targetPath: game.PlayAction.Path,
+                iconPath: iconPath,
+                description: "Launch " + game.Name + " on " + game.Source.Name + ".");
         }
+
+        /// <summary>
+        /// Create a lnk format shortcut.
+        /// </summary>
+        /// <param name="shortcutPath">Full path and filename of the shortcut file.</param>
+        /// <param name="targetPath">Full target path of the shortcut.</param>
+        /// <param name="iconPath">Full path to the icon for the shortcut.</param>
+        /// <param name="description">Description of the shortcut.</param>
+        /// <param name="workingDirectory">Optional path to the working directory.</param>
+        /// <param name="arguments">Optional launch argurments.</param>
+        public void CreateLnk(
+            string shortcutPath, string targetPath, string iconPath, 
+            string description, string workingDirectory = null, string arguments = null)
+        {
+            try
+            {
+                var shell = new WshShell();
+                var shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
+                shortcut.IconLocation = iconPath;
+                shortcut.TargetPath = targetPath;
+                shortcut.Description = description;
+                if (!string.IsNullOrEmpty(workingDirectory))
+                {
+                    shortcut.WorkingDirectory = workingDirectory;
+                }
+                if (!string.IsNullOrEmpty(arguments))
+                {
+                    shortcut.Arguments = arguments;
+                }
+                shortcut.Save();
+            }
+            catch (Exception ex)
+            {
+                LogError($"Could not create shortcut at \"{shortcutPath}\". Exception: {ex.Message}");
+            }
+        }
+
+        #region Logging
+        private enum LogType
+        {
+            Info,
+            Error,
+            Debug,
+            Warn
+        }
+
+        /// <summary>
+        /// Wrapper to write different messages to the log.
+        /// </summary>
+        /// <param name="logType">Type of the message.</param>
+        /// <param name="message">The message to log.</param>
+        private void Log(LogType logType, string message)
+        {
+            var logger = LogManager.GetLogger();
+            string pre = "[Plugin: ShortcutSync] ";
+            switch (logType)
+            {
+                case LogType.Info:
+                    logger.Info(pre + message);
+                    break;
+                case LogType.Error:
+                    logger.Error(pre + message);
+                    break;
+                case LogType.Debug:
+                    logger.Debug(pre + message);
+                    break;
+                case LogType.Warn:
+                    logger.Warn(pre + message);
+                    break;
+                default:
+                    break;
+            }
+        }
+        /// <summary>
+        /// Add info log entry.
+        /// </summary>
+        /// <param name="message">Log message.</param>
+        private void LogInfo(string message)
+        {
+            Log(LogType.Info, message);
+        }
+        /// <summary>
+        /// Add error log entry.
+        /// </summary>
+        /// <param name="message">Log message.</param>
+        private void LogError(string message)
+        {
+            Log(LogType.Error, message);
+        }
+        /// <summary>
+        /// Add debug log entry.
+        /// </summary>
+        /// <param name="message">Log message.</param>
+        private void LogDebug(string message)
+        {
+            Log(LogType.Debug, message);
+        }
+        /// <summary>
+        /// Add warning log entry.
+        /// </summary>
+        /// <param name="message">Log message.</param>
+        private void LogWarn(string message)
+        {
+            Log(LogType.Warn, message);
+        }
+        #endregion
     }
 }
