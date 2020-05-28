@@ -46,11 +46,13 @@ namespace ShortcutSync
                         thread?.Join();
                         thread = new Thread(() =>
                         {
+                            PlayniteApi.Database.Games.BeginBufferUpdate();
                             foreach (var game in PlayniteApi.MainView.SelectedGames)
                             {
                                 // Update shortcuts of selected games
                                 UpdateShortcut(game, true);
                             }
+                            PlayniteApi.Database.Games.EndBufferUpdate();
                         });
                         thread.Start();
                     })
@@ -353,7 +355,11 @@ namespace ShortcutSync
             thread?.Join();
             thread = new Thread(() =>
             {
-                foreach(var game in PlayniteApi.Database.Games)
+                // Buffer updates while updating shortcuts
+                // changes during this process will be handled
+                // by the events afterwards
+                PlayniteApi.Database.Games.BeginBufferUpdate();
+                foreach (var game in PlayniteApi.Database.Games)
                 {
                     if (((game.IsInstalled || game.IsInstalling) || !settings.InstalledOnly) && settings.SourceOptions[game.Source.Name])
                     {
@@ -364,6 +370,7 @@ namespace ShortcutSync
                         RemoveShortcut(game);
                     }
                 }
+                PlayniteApi.Database.Games.EndBufferUpdate();
             });
             thread.Start();
         }
