@@ -210,9 +210,8 @@ namespace ShortcutSync
             // Remove shortcut
             else
             {
-                if (shortcutExists)
+                if (RemoveShortcut(game))
                 {
-                    RemoveShortcut(game);
                     status = UpdateStatus.Deleted;
                 }
             }
