@@ -102,7 +102,7 @@ namespace ShortcutSync
                     }
                     catch (Exception)
                     {
-                        LogManager.GetLogger().Debug($"Could not convert icon. Trying again...");
+                        logger.Debug($"Could not convert icon. Trying again...");
                     }
                     if (success) break;
                 }
@@ -258,7 +258,8 @@ namespace ShortcutSync
             }
             catch (IOException ex)
             {
-                LogError("Could not create temporary file. Exception: " + ex.Message);
+                logger.Error(ex, "Could not create temporary file.");
+                // LogError("Could not create temporary file. Exception: " + ex.Message);
                 return false;
             }
             bool success = false;
@@ -268,7 +269,7 @@ namespace ShortcutSync
             }
             catch (Exception ex)
             {
-                LogManager.GetLogger().Debug($"Could not convert icon {icon}. Exception: " + ex.Message);
+                logger.Debug(ex, $"Could not convert icon {icon}.");
                 throw ex;
             }
             if (success)
@@ -290,13 +291,15 @@ namespace ShortcutSync
                 }
                 catch (Exception ex)
                 {
-                    LogError($"Could not move converted icon to \"{newPath}\". Exception: {ex.Message}");
+                    logger.Error(ex, $"Could not move converted icon to \"{newPath}\".");
+                    // LogError($"Could not move converted icon to \"{newPath}\". Exception: {ex.Message}");
                 }
                 output = newPath;
             }
             else
             {
-                LogError($"Could not convert file \"{icon}\" to ico.");
+                logger.Error($"Could not convert file \"{icon}\" to ico.");
+                // LogError($"Could not convert file \"{icon}\" to ico.");
                 return false;
             }
 
@@ -447,7 +450,7 @@ namespace ShortcutSync
                         }
                     }
                 }
-                // LogInfo($"Updated: {updated}, created: {created}, removed: {removed}");
+                // logger.Info($"Updated: {updated}, created: {created}, removed: {removed}");
                 PlayniteApi.Database.Games.EndBufferUpdate();
             });
             thread.Start();
@@ -561,7 +564,7 @@ namespace ShortcutSync
             }
             catch (Exception ex)
             {
-                LogError($"Could not create shortcut at \"{shortcutPath}\". Exception: {ex.Message}");
+                logger.Error(ex, $"Could not create shortcut at \"{shortcutPath}\".");
             }
         }
 
@@ -595,6 +598,7 @@ namespace ShortcutSync
                         System.IO.File.Delete(file);
                     } else
                     {
+
                         games.Add(game.Id, file);
                     }
                 }
@@ -614,80 +618,10 @@ namespace ShortcutSync
                 }
                 catch (Exception ex)
                 {
-                    LogError($"Could not open shortcut at \"{shortcutPath}\". Exception: {ex.Message}");
+                    logger.Error(ex, $"Could not open shortcut at \"{shortcutPath}\".");
                 }
             }
             return null;
         }
-
-        #region Logging
-        private enum LogType
-        {
-            Info,
-            Error,
-            Debug,
-            Warn
-        }
-
-        /// <summary>
-        /// Wrapper to write different messages to the log.
-        /// </summary>
-        /// <param name="logType">Type of the message.</param>
-        /// <param name="message">The message to log.</param>
-        private void Log(LogType logType, string message)
-        {
-            var logger = LogManager.GetLogger();
-            string pre = "[Plugin: ShortcutSync] ";
-            switch (logType)
-            {
-                case LogType.Info:
-                    logger.Info(pre + message);
-                    break;
-                case LogType.Error:
-                    logger.Error(pre + message);
-                    break;
-                case LogType.Debug:
-                    logger.Debug(pre + message);
-                    break;
-                case LogType.Warn:
-                    logger.Warn(pre + message);
-                    break;
-                default:
-                    break;
-            }
-        }
-        /// <summary>
-        /// Add info log entry.
-        /// </summary>
-        /// <param name="message">Log message.</param>
-        private void LogInfo(string message)
-        {
-            Log(LogType.Info, message);
-        }
-        /// <summary>
-        /// Add error log entry.
-        /// </summary>
-        /// <param name="message">Log message.</param>
-        private void LogError(string message)
-        {
-            Log(LogType.Error, message);
-        }
-        /// <summary>
-        /// Add debug log entry.
-        /// </summary>
-        /// <param name="message">Log message.</param>
-        private void LogDebug(string message)
-        {
-            Log(LogType.Debug, message);
-        }
-        /// <summary>
-        /// Add warning log entry.
-        /// </summary>
-        /// <param name="message">Log message.</param>
-        private void LogWarn(string message)
-        {
-            Log(LogType.Warn, message);
-        }
-        #endregion
     }
 }
