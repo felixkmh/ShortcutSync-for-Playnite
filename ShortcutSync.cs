@@ -467,38 +467,6 @@ namespace ShortcutSync
                     }
                       
                 }
-                /*
-                foreach (var games in pathDict.Values)
-                {
-                    bool useSourceName = games.keep.Count > 1;
-                    string gameName;
-                    if (games.keep.Count > 0)
-                    {
-                        gameName = games.keep[0].Name;
-                    } else
-                    {
-                        gameName = games.discard[0].Name;
-                    }
-                    
-                        string shortcutPath = GetShortcutPath(game: game, includeSourceName: useSourceName);
-                        switch (UpdateShortcut(game, forceUpdate, useSourceName))
-                        {
-                            case UpdateStatus.Updated:
-                                updated++;
-                                break;
-                            case UpdateStatus.Deleted:
-                                removed++;
-                                break;
-                            case UpdateStatus.Created:
-                                created++;
-                                break;
-                            default:
-                                break;
-                        }
-
-                }
-                */
-                // logger.Info($"Updated: {updated}, created: {created}, removed: {removed}");
                 PlayniteApi.Database.Games.EndBufferUpdate();
             });
             thread.Start();
