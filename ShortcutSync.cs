@@ -416,9 +416,6 @@ namespace ShortcutSync
                 // changes during this process will be handled
                 // by the events afterwards
                 PlayniteApi.Database.Games.BeginBufferUpdate();
-                int removed = 0;
-                int updated = 0;
-                int created = 0;
 
                 foreach (var game in gamesToUpdate)
                 {
