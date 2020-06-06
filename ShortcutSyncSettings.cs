@@ -78,8 +78,12 @@ namespace ShortcutSync
         // Callback for the Select Folder Button
         private void Bt_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            ShortcutPath = plugin.PlayniteApi.Dialogs.SelectFolder();
-            ((TextBox)plugin.settingsView.FindName("PathTextBox")).Text = ShortcutPath;
+            string path = plugin.PlayniteApi.Dialogs.SelectFolder();
+            if (!string.IsNullOrEmpty(path))
+            {
+                ShortcutPath = path;
+                ((TextBox)plugin.settingsView.FindName("PathTextBox")).Text = ShortcutPath;
+            }
         }
 
         public void CancelEdit()
