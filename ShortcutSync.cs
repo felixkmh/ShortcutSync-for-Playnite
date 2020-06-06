@@ -460,7 +460,6 @@ namespace ShortcutSync
                                 catch (Exception ex)
                                 {
                                     logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name} on {game.Source.Name}." + existing.ToJson(true));
-                                    throw ex;
                                 }
                                 existingShortcuts[existing[0].Id] = newPath;
                             }
@@ -656,6 +655,10 @@ namespace ShortcutSync
                         nameToId[safeGameName].Add(gameId);
                     }
 
+                } else
+                {
+                    // Delete invalid shortcut
+                    System.IO.File.Delete(file);
                 }
             }
             return (games, nameToId);
