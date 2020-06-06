@@ -1,4 +1,5 @@
 ﻿using IWshRuntimeLibrary;
+using Playnite.Common;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
@@ -20,6 +21,8 @@ namespace ShortcutSync
         private Thread thread;
         private ShortcutSyncSettings settings { get; set; }
         public ShortcutSyncSettingsView settingsView { get; set; }
+        private Dictionary<Guid, string> existingShortcuts { get; set; }
+        private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; } 
 
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
@@ -44,6 +47,7 @@ namespace ShortcutSync
                     "Update All Shortcuts",
                     () =>
                     {
+                        (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
                         // Update shortcuts of all (installed) games
                         UpdateShortcuts(PlayniteApi.Database.Games);
                     }),
@@ -51,7 +55,8 @@ namespace ShortcutSync
                     "Force Update Selected Shortcuts",
                     () =>
                     {
-                        UpdateShortcuts(PlayniteApi.MainView.SelectedGames);
+                        (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
+                        UpdateShortcuts(PlayniteApi.MainView.SelectedGames, true);
                     })
             };
         }
@@ -59,10 +64,11 @@ namespace ShortcutSync
         public override void OnApplicationStarted()
         {
             Directory.CreateDirectory(settings.ShortcutPath);
+            (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
             if (settings.UpdateOnStartup)
             {
                 UpdateShortcuts(PlayniteApi.Database.Games);
-            }
+            } 
             PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
             PlayniteApi.Database.Games.ItemCollectionChanged += Games_ItemCollectionChanged;
         }
@@ -134,13 +140,15 @@ namespace ShortcutSync
         /// </summary>
         /// <param name="game">Game the shortcut should point to.</param>
         /// <param name="forceUpdate">If true, existing shortcut will be overwritten.</param>
+        /// <param name="multiple">Specifies whether source name should be included in the shortcut
+        /// name to prevent conflicts if multiple games have the same shortcut name.</param>
         /// <returns>Status of the associated shortcut.</returns>
         public UpdateStatus UpdateShortcut(Game game, bool forceUpdate, bool multiple = false)
         {
             UpdateStatus status = UpdateStatus.None;
-            string path = GetShortcutPath(game, includeSourceName: multiple);
             // determine whether to create/update the shortcut or to delete it
-            bool shortcutExists = System.IO.File.Exists(path);
+            bool shortcutExists = existingShortcuts.TryGetValue(game.Id, out string currentPath);
+            string desiredPath = GetShortcutPath(game, multiple);
             bool keepShortcut = ShouldKeepShortcut(game);
             // Keep/Update shortcut
             if (keepShortcut)
@@ -152,11 +160,22 @@ namespace ShortcutSync
                     if (shortcutExists)
                     {
                         status = UpdateStatus.Updated;
+                        if (desiredPath != currentPath)
+                        {
+                            System.IO.File.Move(currentPath, desiredPath);
+                        }
                     } else
                     {
                         status = UpdateStatus.Created;
                     }
-                    CreateShortcut(game, path);
+                    CreateShortcut(game, desiredPath);
+                    existingShortcuts[game.Id] = desiredPath;
+                    string safeGameName = GetSafeFileName(game.Name).ToLower();
+                    if (!shortcutNameToGameId.ContainsKey(safeGameName))
+                    {
+                        shortcutNameToGameId[safeGameName] = new List<Guid>();
+                    }
+                    shortcutNameToGameId[safeGameName].AddMissing(game.Id);
                 }
 
             }
@@ -166,6 +185,11 @@ namespace ShortcutSync
                 if (RemoveShortcut(game))
                 {
                     status = UpdateStatus.Deleted;
+                    existingShortcuts.Remove(game.Id);
+                    if (shortcutNameToGameId.TryGetValue(GetSafeFileName(game.Name).ToLower(), out var games))
+                    {
+                        games.Remove(game.Id);
+                    }
                 }
             }
             return status;
@@ -201,14 +225,20 @@ namespace ShortcutSync
             {
                 if (Path.GetExtension(icon) != ".ico")
                 {
-                    if (ConvertToIcon(icon, out string output))
+                    // Check if icon has already been converted before
+                    var iconFiles = System.IO.Directory.GetFiles(PlayniteApi.Database.GetFileStoragePath(game.Id), "*.ico");
+                    if (iconFiles.Length > 0)
+                    {
+                        icon = iconFiles[0];
+                    } 
+                    else if (ConvertToIcon(icon, out string output))
                     {
                         icon = output;
                     }
                 }
             }
             // If no icon was found, use a fallback icon.
-            else if (String.IsNullOrEmpty(icon))
+            else 
             {
                 icon = Path.Combine(PlayniteApi.Paths.ApplicationPath, "Playnite.DesktopApp.exe");
             }
@@ -336,15 +366,18 @@ namespace ShortcutSync
         /// <param name="game">The game the shortcut points to.</param>
         private bool RemoveShortcut(Game game)
         {
-            var path = GetShortcutPath(game);
-            if (System.IO.File.Exists(path))
+            if (existingShortcuts.TryGetValue(game.Id, out string path))
             {
-                System.IO.File.Delete(path);
-                return true;
-            } else
-            {
-                return false;
+                if (System.IO.File.Exists(path))
+                {
+                    System.IO.File.Delete(path);
+                    return true;
+                } else
+                {
+                    return false;
+                }
             }
+            return false;
         }
 
         /// <summary>
@@ -365,7 +398,7 @@ namespace ShortcutSync
         /// deleted games.
         /// </summary>
         /// <param name="gamesToUpdate">Games to update.</param>
-        public void UpdateShortcuts(IEnumerable<Game> gamesToUpdate)
+        public void UpdateShortcuts(IEnumerable<Game> gamesToUpdate, bool forceUpdate = false)
         {
             // Updatind all games can take some time
             // execute in a task so main thread is not blocked.
@@ -380,61 +413,75 @@ namespace ShortcutSync
                 int updated = 0;
                 int created = 0;
 
-                Dictionary<string, Tuple<IList<Game>, IList<Game>>> pathDict = new Dictionary<string, Tuple<IList<Game>, IList<Game>>>();
                 foreach (var game in gamesToUpdate)
                 {
                     string path = GetShortcutPath(game: game, includeSourceName: false);
+                    string safeGameName = GetSafeFileName(game.Name);
 
-                    if (!pathDict.ContainsKey(path))
+                    List<Game> existing = new List<Game>();
+                    if (shortcutNameToGameId.ContainsKey(safeGameName.ToLower()))
                     {
-                        pathDict.Add(path, 
-                            new Tuple<IList<Game>, IList<Game>>(new List<Game>(), new List<Game>()));
-                    } 
+                        existing.AddRange(
+                            from gameId 
+                            in shortcutNameToGameId[safeGameName.ToLower()] 
+                            where gameId != game.Id 
+                            select PlayniteApi.Database.Games.Get(gameId));
+                    }
                     if (ShouldKeepShortcut(game))
                     {
-                        pathDict[path].Item1.Add(game);
+                        foreach (var copy in existing)
+                        {
+                            string newPath = GetShortcutPath(game: copy, includeSourceName: true);
+                            string currentPath = existingShortcuts[copy.Id];
+                            if (System.IO.Path.GetFileName(currentPath).ToLower() != System.IO.Path.GetFileName(newPath).ToLower())
+                            {
+                                System.IO.File.Move(currentPath, newPath);
+                                existingShortcuts[copy.Id] = newPath;
+                            }
+                        }
+                        UpdateShortcut(game, forceUpdate, existing.Count > 0);
+                    } else if (existing.Count == 1)
+                    {
+                        UpdateShortcut(game, forceUpdate, false);
+                        string newPath = GetShortcutPath(game: existing[0], includeSourceName: false);
+                        string currentPath = existingShortcuts[existing[0].Id];
+                        if (System.IO.Path.GetFileName(currentPath).ToLower() != System.IO.Path.GetFileName(newPath).ToLower())
+                        {
+                            if (!System.IO.File.Exists(newPath))
+                            {
+                                try
+                                {
+                                    System.IO.File.Move(currentPath, newPath);
+                                }
+                                catch (Exception ex)
+                                {
+                                    logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name} on {game.Source.Name}." + existing.ToJson(true));
+                                    throw ex;
+                                }
+                                existingShortcuts[existing[0].Id] = newPath;
+                            }
+                        }
                     } else
                     {
-                        pathDict[path].Item2.Add(game);
+                        UpdateShortcut(game, forceUpdate, false);
                     }
+                      
                 }
+                /*
                 foreach (var games in pathDict.Values)
                 {
-                    bool useSourceName = games.Item1.Count > 1;
+                    bool useSourceName = games.keep.Count > 1;
                     string gameName;
-                    if (games.Item1.Count > 0)
+                    if (games.keep.Count > 0)
                     {
-                        gameName = games.Item1[0].Name;
+                        gameName = games.keep[0].Name;
                     } else
                     {
-                        gameName = games.Item2[0].Name;
+                        gameName = games.discard[0].Name;
                     }
-                    var existingShortcuts = GetExistingShortcuts(settings.ShortcutPath, GetSafeFileName(gameName));
-                    int copyCount = existingShortcuts.Count;
-                    useSourceName = copyCount > 1 || useSourceName;
-                    foreach (var game in games.Item1.Union(games.Item2))
-                    {
-                        if (existingShortcuts.TryGetValue(game.Id, out string file))
-                        {
-                            bool includesSourceName = file == GetShortcutPath(game, true);
-                            if (!ShouldKeepShortcut(game))
-                            {
-                                System.IO.File.Delete(file);
-                            } else 
-                            if (!useSourceName && includesSourceName)
-                            {
-                                string newPath = GetShortcutPath(game, false);
-                                if (System.IO.File.Exists(newPath)) System.IO.File.Delete(newPath);
-                                System.IO.File.Move(file, newPath);
-                            } else if (useSourceName && !includesSourceName)
-                            {
-                                string newPath = GetShortcutPath(game, true);
-                                if (System.IO.File.Exists(newPath)) System.IO.File.Delete(newPath);
-                                System.IO.File.Move(file, newPath);
-                            }
-                        } 
+                    
                         string shortcutPath = GetShortcutPath(game: game, includeSourceName: useSourceName);
-                        switch (UpdateShortcut(game, settings.ForceUpdate, useSourceName))
+                        switch (UpdateShortcut(game, forceUpdate, useSourceName))
                         {
                             case UpdateStatus.Updated:
                                 updated++;
@@ -448,8 +495,9 @@ namespace ShortcutSync
                             default:
                                 break;
                         }
-                    }
+
                 }
+                */
                 // logger.Info($"Updated: {updated}, created: {created}, removed: {removed}");
                 PlayniteApi.Database.Games.EndBufferUpdate();
             });
@@ -568,42 +616,61 @@ namespace ShortcutSync
             }
         }
 
-        private Dictionary<Guid, string> 
+        private bool ExtractIdFromLnkDescription(string description, out Guid gameId)
+        {
+            int startId = -1, endId = -1;
+            for (int i = description.Length - 1; i >= 0; --i)
+            {
+                if (description[i] == ']')
+                {
+                    endId = i - 1;
+                }
+                else if (description[i] == '[')
+                {
+                    startId = i + 1;
+                    break;
+                }
+            }
+            if (startId != -1 && endId != -1)
+            {
+                gameId = Guid.Parse(description.Substring(startId, endId - startId + 1));
+                return true;
+            } else
+            {
+                gameId = default;
+                return false;
+            }
+        }
+
+        private (Dictionary<Guid, string> guidToShortcut, Dictionary<string, IList<Guid>> nameToGuid)
             GetExistingShortcuts(string folderPath, string shortcutName = "")
         {
             var games = new Dictionary<Guid, string>();
+            var nameToId = new Dictionary<string, IList<Guid>>();
             var files = Directory.GetFiles(folderPath, shortcutName + "*.lnk");
             foreach(var file in files)
             {
                 var shortcut = OpenLnk(file);
-                string desc = shortcut.Description;
-                int startId = -1, endId = -1;
-                for (int i = desc.Length-1; i >= 0; --i )
+                if (ExtractIdFromLnkDescription(shortcut.Description, out Guid gameId))
                 {
-                    if (desc[i] == ']')
-                    {
-                        endId = i - 1;
-                    } else if (desc[i] == '[')
-                    {
-                        startId = i + 1;
-                        break;
-                    }
-                }
-                if (startId != -1 && endId != -1)
-                {
-                    Guid id = Guid.Parse(desc.Substring(startId, endId - startId + 1));
-                    Game game = PlayniteApi.Database.Games[id];
+                    Game game = PlayniteApi.Database.Games[gameId];
                     if (games.ContainsKey(game.Id))
                     {
                         System.IO.File.Delete(file);
                     } else
                     {
-
                         games.Add(game.Id, file);
+                        string safeGameName = GetSafeFileName(game.Name).ToLower();
+                        if (!nameToId.ContainsKey(safeGameName))
+                        {
+                            nameToId.Add(safeGameName, new List<Guid>());
+                        }
+                        nameToId[safeGameName].Add(gameId);
                     }
+
                 }
             }
-            return games;
+            return (games, nameToId);
         }
 
         public IWshShortcut OpenLnk(string shortcutPath)
