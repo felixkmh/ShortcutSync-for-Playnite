@@ -195,6 +195,13 @@ namespace ShortcutSync
             return status;
         }
 
+
+        /// <summary>
+        /// Checks whether a game's shortcut will be kept when updated
+        /// based on its state and the plugin settings.
+        /// </summary>
+        /// <param name="game">The game that is ckecked.</param>
+        /// <returns>Whether shortcut should be kept.</returns>
         private bool ShouldKeepShortcut(Game game)
         {
             settings.SourceOptions.TryGetValue(game.Source.Name, out bool sourceEnabled);
@@ -584,6 +591,12 @@ namespace ShortcutSync
             }
         }
 
+        /// <summary>
+        /// Looks for a <see cref="Guid"/> inside []-brackets inside a string.
+        /// </summary>
+        /// <param name="description">string containing the <see cref="Guid"/>.</param>
+        /// <param name="gameId">The extracted <see cref="Guid"/>.</param>
+        /// <returns>Whether a valid <see cref="Guid"/> could be parsed.</returns>
         private bool ExtractIdFromLnkDescription(string description, out Guid gameId)
         {
             int startId = -1, endId = -1;
@@ -610,6 +623,16 @@ namespace ShortcutSync
             }
         }
 
+        /// <summary>
+        /// Searches a folder for existing shortcuts by reading
+        /// their description and looking for a <see cref="Guid"/> inside []-brackets
+        /// and creates dictionaries holding the results.
+        /// </summary>
+        /// <param name="folderPath">Full path to the folder to check for shortcuts.</param>
+        /// <param name="shortcutName">Pattern to look for that is prepended to "*.lnk" to look for files.</param>
+        /// <returns>A dictionary that assigns each found gameId to the full shortcut path
+        /// and a dictionary assigning file names in lower case to a list of gameIds 
+        /// that would create a shortcut with that name.</returns>
         private (Dictionary<Guid, string> guidToShortcut, Dictionary<string, IList<Guid>> nameToGuid)
             GetExistingShortcuts(string folderPath, string shortcutName = "")
         {
@@ -641,6 +664,13 @@ namespace ShortcutSync
             return (games, nameToId);
         }
 
+
+        /// <summary>
+        /// Opens/Creates and returns a <see cref="IWshShortcut"/> at a 
+        /// given path.
+        /// </summary>
+        /// <param name="shortcutPath">Full path to the shortcut.</param>
+        /// <returns>The shortcut object.</returns>
         public IWshShortcut OpenLnk(string shortcutPath)
         {
             if (System.IO.File.Exists(shortcutPath))
