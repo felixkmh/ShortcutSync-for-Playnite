@@ -31,7 +31,8 @@ namespace ShortcutSync
             None,
             Updated,
             Deleted,
-            Created
+            Created,
+            Error
         }
 
         public ShortcutSync(IPlayniteAPI api) : base(api)
@@ -63,7 +64,14 @@ namespace ShortcutSync
 
         public override void OnApplicationStarted()
         {
-            Directory.CreateDirectory(settings.ShortcutPath);
+            try
+            {
+                Directory.CreateDirectory(settings.ShortcutPath);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Could not create directory \"{settings.ShortcutPath}\". Try choosing another folder.");
+            }
             (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
             if (settings.UpdateOnStartup)
             {
@@ -162,7 +170,15 @@ namespace ShortcutSync
                         status = UpdateStatus.Updated;
                         if (desiredPath != currentPath)
                         {
-                            System.IO.File.Move(currentPath, desiredPath);
+                            try
+                            {
+                                System.IO.File.Move(currentPath, desiredPath);
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.Error(ex, $"Could not move \"{currentPath}\" to \"{desiredPath}\".");
+                                return UpdateStatus.Error;
+                            }
                         }
                     } else
                     {
@@ -233,7 +249,15 @@ namespace ShortcutSync
                 if (Path.GetExtension(icon) != ".ico")
                 {
                     // Check if icon has already been converted before
-                    var iconFiles = System.IO.Directory.GetFiles(PlayniteApi.Database.GetFileStoragePath(game.Id), "*.ico");
+                    var iconFiles = new string[0];
+                    try
+                    {
+                        iconFiles = System.IO.Directory.GetFiles(PlayniteApi.Database.GetFileStoragePath(game.Id), "*.ico");
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, $"Could not open folder {PlayniteApi.Database.GetFileStoragePath(game.Id)} to look for existing .ico files.");
+                    }
                     if (iconFiles.Length > 0)
                     {
                         icon = iconFiles[0];
@@ -377,7 +401,15 @@ namespace ShortcutSync
             {
                 if (System.IO.File.Exists(path))
                 {
-                    System.IO.File.Delete(path);
+                    try
+                    {
+                        System.IO.File.Delete(path);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, $"Could not delete shortcut at \"{path}\".");
+                        return false;
+                    }
                     return true;
                 } else
                 {
@@ -407,6 +439,7 @@ namespace ShortcutSync
         /// <param name="gamesToUpdate">Games to update.</param>
         public void UpdateShortcuts(IEnumerable<Game> gamesToUpdate, bool forceUpdate = false)
         {
+            bool errorOccured = false;
             // Updatind all games can take some time
             // execute in a task so main thread is not blocked.
             thread?.Join();
@@ -436,17 +469,32 @@ namespace ShortcutSync
                         foreach (var copy in existing)
                         {
                             string newPath = GetShortcutPath(game: copy, includeSourceName: true);
-                            string currentPath = existingShortcuts[copy.Id];
-                            if (System.IO.Path.GetFileName(currentPath).ToLower() != System.IO.Path.GetFileName(newPath).ToLower())
+                            if (existingShortcuts.TryGetValue(copy.Id, out string currentPath))
                             {
-                                System.IO.File.Move(currentPath, newPath);
-                                existingShortcuts[copy.Id] = newPath;
+                                if (System.IO.Path.GetFileName(currentPath).ToLower() != System.IO.Path.GetFileName(newPath).ToLower())
+                                {
+                                    try
+                                    {
+                                        System.IO.File.Move(currentPath, newPath);
+                                        existingShortcuts[copy.Id] = newPath;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name} on {game.Source.Name}.");
+                                    }
+                                }
                             }
                         }
-                        UpdateShortcut(game, forceUpdate, existing.Count > 0);
+                        if (UpdateShortcut(game, forceUpdate, existing.Count > 0) == UpdateStatus.Error)
+                        {
+                            errorOccured = true;
+                        }
                     } else if (existing.Count == 1)
                     {
-                        UpdateShortcut(game, forceUpdate, false);
+                        if (UpdateShortcut(game, forceUpdate, false) == UpdateStatus.Error)
+                        {
+                            errorOccured = true;
+                        }
                         string newPath = GetShortcutPath(game: existing[0], includeSourceName: false);
                         string currentPath = existingShortcuts[existing[0].Id];
                         if (System.IO.Path.GetFileName(currentPath).ToLower() != System.IO.Path.GetFileName(newPath).ToLower())
@@ -459,16 +507,24 @@ namespace ShortcutSync
                                 }
                                 catch (Exception ex)
                                 {
-                                    logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name} on {game.Source.Name}." + existing.ToJson(true));
+                                    logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name} on {game.Source.Name}.");
                                 }
                                 existingShortcuts[existing[0].Id] = newPath;
                             }
                         }
                     } else
                     {
-                        UpdateShortcut(game, forceUpdate, false);
+                        if (UpdateShortcut(game, forceUpdate, false) == UpdateStatus.Error)
+                        {
+                            errorOccured = true;
+                        }
                     }
                       
+                }
+                if (errorOccured)
+                {
+                    // Refresh dictionaries to properly reflect current state.
+                    (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
                 }
                 PlayniteApi.Database.Games.EndBufferUpdate();
             });
@@ -634,7 +690,15 @@ namespace ShortcutSync
         {
             var games = new Dictionary<Guid, string>();
             var nameToId = new Dictionary<string, IList<Guid>>();
-            var files = Directory.GetFiles(folderPath, shortcutName + "*.lnk");
+            string[] files = new string[0];
+            try
+            {
+                files = Directory.GetFiles(folderPath, shortcutName + "*.lnk");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Could not open folder at {folderPath}. Can not update which shortcuts already exist.");
+            }
             foreach(var file in files)
             {
                 var shortcut = OpenLnk(file);
@@ -643,7 +707,15 @@ namespace ShortcutSync
                     Game game = PlayniteApi.Database.Games[gameId];
                     if (games.ContainsKey(game.Id))
                     {
-                        System.IO.File.Delete(file);
+                        logger.Warn($"Shortcut at \"{file}\" is a duplicate for {game.Name} with gameId {game.Id}. Will be deleted.");
+                        try
+                        {
+                            System.IO.File.Delete(file);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error(ex, $"Could not remove shortcut at \"{file}\".");
+                        }
                     } else
                     {
                         games.Add(game.Id, file);
@@ -658,7 +730,11 @@ namespace ShortcutSync
                 } else
                 {
                     // Delete invalid shortcut
-                    System.IO.File.Delete(file);
+                    // System.IO.File.Delete(file);
+                    logger.Warn(
+                        $"Shortcut at {file} is not a valid shortcut created by ShortcutSync and" +
+                        $" may cause it not to function as intended. If possible, " +
+                        $"delete it or move it to another location.");
                 }
             }
             return (games, nameToId);
