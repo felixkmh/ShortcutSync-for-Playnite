@@ -666,8 +666,7 @@ namespace ShortcutSync
             }
             if (startId != -1 && endId != -1)
             {
-                gameId = Guid.Parse(description.Substring(startId, endId - startId + 1));
-                return true;
+                return Guid.TryParse(description.Substring(startId, endId - startId + 1), out gameId);
             } else
             {
                 gameId = default;
@@ -702,9 +701,21 @@ namespace ShortcutSync
             foreach(var file in files)
             {
                 var shortcut = OpenLnk(file);
+                if (shortcut == null)
+                {
+                    // skip if shortcut could not be opened
+                    logger.Warn($"Could not open shortcut at \"{file}\". Could be corrupted or file access might be restricted.");
+                    continue;
+                }
                 if (ExtractIdFromLnkDescription(shortcut.Description, out Guid gameId))
                 {
-                    Game game = PlayniteApi.Database.Games[gameId];
+                    Game game = PlayniteApi.Database.Games.Get(gameId);
+                    if (game == null)
+                    {
+                        logger.Warn($"Shortcut at \"{file}\" conatins Guid \"{gameId}\", but this Id is not contained in the game database.");
+                        // skip if Guid was not found in game databas
+                        continue;
+                    }
                     if (games.ContainsKey(game.Id))
                     {
                         logger.Warn($"Shortcut at \"{file}\" is a duplicate for {game.Name} with gameId {game.Id}. Will be deleted.");
