@@ -120,6 +120,16 @@ namespace ShortcutSync
                 errors.Add(ex.Message);
                 return false;
             }
+            // Check whether user has write persmission to the selected folder
+            try
+            {
+                var ac = Directory.GetAccessControl(ShortcutPath);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                errors.Add("The selected folder cannot be written to. Please select another folder.");
+                return false;
+            }
             return true;
         }
     }

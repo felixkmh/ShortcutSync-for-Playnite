@@ -48,16 +48,28 @@ namespace ShortcutSync
                     "Update All Shortcuts",
                     () =>
                     {
-                        (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
-                        // Update shortcuts of all (installed) games
-                        UpdateShortcuts(PlayniteApi.Database.Games);
+                        if (FolderIsAccessible(settings.ShortcutPath))
+                        {
+                            (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
+                            UpdateShortcuts(PlayniteApi.Database.Games);
+                        } else
+                        {
+                            PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
+                        }
+
                     }),
                 new ExtensionFunction(
                     "Force Update Selected Shortcuts",
                     () =>
                     {
-                        (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
-                        UpdateShortcuts(PlayniteApi.MainView.SelectedGames, true);
+                        if (FolderIsAccessible(settings.ShortcutPath))
+                        {
+                            (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
+                            UpdateShortcuts(PlayniteApi.MainView.SelectedGames, true);
+                        } else
+                        {
+                            PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
+                        }
                     })
             };
         }
@@ -75,7 +87,14 @@ namespace ShortcutSync
             (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
             if (settings.UpdateOnStartup)
             {
-                UpdateShortcuts(PlayniteApi.Database.Games);
+                if (FolderIsAccessible(settings.ShortcutPath))
+                {
+                    UpdateShortcuts(PlayniteApi.Database.Games);
+                }
+                else
+                {
+                    PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
+                }
             } 
             PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
             PlayniteApi.Database.Games.ItemCollectionChanged += Games_ItemCollectionChanged;
@@ -630,12 +649,18 @@ namespace ShortcutSync
             {
                 var shell = new WshShell();
                 var shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
-                shortcut.IconLocation = iconPath;
-                shortcut.TargetPath = targetPath;
-                shortcut.Description = description;
-                shortcut.WorkingDirectory = workingDirectory;
-                shortcut.Arguments = arguments;
-                shortcut.Save();
+                if (shortcut != null)
+                {
+                    shortcut.IconLocation = iconPath;
+                    shortcut.TargetPath = targetPath;
+                    shortcut.Description = description;
+                    shortcut.WorkingDirectory = workingDirectory;
+                    shortcut.Arguments = arguments;
+                    shortcut.Save();
+                } else
+                {
+                    logger.Error($"Could not create shortcut at \"{shortcutPath}\".");
+                }
             }
             catch (Exception ex)
             {
@@ -774,6 +799,28 @@ namespace ShortcutSync
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Checks whether a folder can be written to.
+        /// </summary>
+        /// <param name="folderPath"></param>
+        /// <returns>Whether the folder can be written to.</returns>
+        private bool FolderIsAccessible(string folderPath)
+        {
+            bool accessible = false;
+            try
+            {
+                if (Directory.Exists(folderPath))
+                {
+                    var ac = Directory.GetAccessControl(folderPath);
+                    accessible = true;
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+            return accessible;
         }
     }
 }
