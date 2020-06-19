@@ -17,6 +17,7 @@ namespace ShortcutSync
 {
     public class ShortcutSync : Plugin
     {
+        private const string UNDEFINEDSOURCE = "Undefined";
         private static readonly ILogger logger = LogManager.GetLogger();
         private Thread thread;
         private ShortcutSyncSettings settings { get; set; }
@@ -239,13 +240,20 @@ namespace ShortcutSync
         /// <returns>Whether shortcut should be kept.</returns>
         private bool ShouldKeepShortcut(Game game)
         {
-            settings.SourceOptions.TryGetValue(game.Source.Name, out bool sourceEnabled);
+            bool sourceEnabled = false;
+            if (game.Source != null)
+            {
+                settings.SourceOptions.TryGetValue(game.Source.Name, out sourceEnabled);
+            } else
+            {
+                settings.SourceOptions.TryGetValue(UNDEFINEDSOURCE, out sourceEnabled);
+            }
             bool exludeBecauseHidden = settings.ExcludeHidden && game.Hidden;
             bool keepShortcut =
-              (game.IsInstalled ||
-               !settings.InstalledOnly) &&
-               sourceEnabled &&
-               !exludeBecauseHidden;
+                (game.IsInstalled ||
+                !settings.InstalledOnly) &&
+                sourceEnabled &&
+                !exludeBecauseHidden;
             return keepShortcut;
         }
 
@@ -294,7 +302,7 @@ namespace ShortcutSync
             }
             // Creat playnite URI if game is not installed
             // or if Use PlayAction option is disabled
-            if (!game.IsInstalled || !settings.UsePlayAction)
+            if (!game.IsInstalled || !settings.UsePlayAction || game.Source == null)
             {
                 CreateLnkURL(shortcutPath, icon, game);
             } 
@@ -401,7 +409,10 @@ namespace ShortcutSync
             string path;
             if (includeSourceName)
             {
-                path = Path.Combine(settings.ShortcutPath, validName + " (" + game.Source.Name + ")" + extension);
+                string sourceName = UNDEFINEDSOURCE;
+                if (game.Source != null)
+                    sourceName = game.Source.Name;
+                path = Path.Combine(settings.ShortcutPath, validName + " (" + sourceName + ")" + extension);
             } else
             {
                 path = Path.Combine(settings.ShortcutPath, validName + extension);
@@ -499,7 +510,7 @@ namespace ShortcutSync
                                     }
                                     catch (Exception ex)
                                     {
-                                        logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name} on {game.Source.Name}.");
+                                        logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name}.");
                                     }
                                 }
                             }
@@ -526,7 +537,7 @@ namespace ShortcutSync
                                 }
                                 catch (Exception ex)
                                 {
-                                    logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name} on {game.Source.Name}.");
+                                    logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name}.");
                                 }
                                 existingShortcuts[existing[0].Id] = newPath;
                             }
@@ -576,11 +587,14 @@ namespace ShortcutSync
             {
                 targetPath = Path.Combine(workingDirectory, targetPath);
             }
+            string sourceName = UNDEFINEDSOURCE;
+            if (game.Source != null)
+                sourceName = game.Source.Name;
             CreateLnk(
                 shortcutPath: path,
                 targetPath: targetPath,
                 iconPath: iconPath,
-                description: "Launch " + game.Name + " on " + game.Source.Name + "." + $" [{game.Id}]",
+                description: "Launch " + game.Name + " on " + sourceName + "." + $" [{game.Id}]",
                 workingDirectory: workingDirectory,
                 arguments: game.PlayAction.Arguments);
         }
@@ -595,11 +609,14 @@ namespace ShortcutSync
         public void CreateLnkFileXbox(string path, string iconPath, Game game)
         {
             string targetPath = PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path);
+            string sourceName = UNDEFINEDSOURCE;
+            if (game.Source != null)
+                sourceName = game.Source.Name;
             CreateLnk(
                 shortcutPath: path,
                 targetPath: @"C:Windows\explorer.exe",
                 iconPath: iconPath,
-                description: "Launch " + game.Name + " on " + game.Source.Name + "." + $" [{game.Id}]",
+                description: "Launch " + game.Name + " on " + sourceName + "." + $" [{game.Id}]",
                 workingDirectory: "Applications",
                 arguments: game.PlayAction.Arguments);
         }
@@ -611,11 +628,14 @@ namespace ShortcutSync
         /// <param name="game"></param>
         public void CreateLnkURL(string path, string iconPath, Game game)
         {
+            string sourceName = UNDEFINEDSOURCE;
+            if (game.Source != null)
+                sourceName = game.Source.Name;
             CreateLnk(
                 shortcutPath: path,
                 targetPath: $"playnite://playnite/start/{game.Id}",
                 iconPath: iconPath,
-                description: "Launch " + game.Name + " on " + game.Source.Name + " via Playnite." + $" [{game.Id}]");
+                description: "Launch " + game.Name + " on " + sourceName + " via Playnite." + $" [{game.Id}]");
         }
         /// <summary>
         /// Creates a .lnk shortcut given a game with a URL PlayAction.
@@ -625,11 +645,14 @@ namespace ShortcutSync
         /// <param name="game"></param>
         public void CreateLnkURLDirect(string path, string iconPath, Game game)
         {
+            string sourceName = UNDEFINEDSOURCE;
+            if (game.Source != null)
+                sourceName = game.Source.Name;
             CreateLnk(
                 shortcutPath: path,
                 targetPath: game.PlayAction.Path,
                 iconPath: iconPath,
-                description: "Launch " + game.Name + " on " + game.Source.Name + "." + $" [{game.Id}]");
+                description: "Launch " + game.Name + " on " + sourceName + "." + $" [{game.Id}]");
         }
 
         /// <summary>

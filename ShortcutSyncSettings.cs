@@ -18,7 +18,7 @@ namespace ShortcutSync
         public bool UpdateOnStartup { get; set; } = false;
         public bool ForceUpdate { get; set; } = false;
         public bool ExcludeHidden { get; set; } = false;
-        public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>();
+        public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
 
         // Parameterless constructor must exist if you want to use LoadPluginSettings method.
         public ShortcutSyncSettings()
@@ -61,6 +61,10 @@ namespace ShortcutSync
                 {
                     SourceOptions.Add(src.Name, false);
                 }
+            }
+            if (!SourceOptions.ContainsKey("Undefined"))
+            {
+                SourceOptions.Add("Undefined", false);
             }
             // Set view up
             var container = (StackPanel)plugin.settingsView.FindName("SourceSettingsStack");
