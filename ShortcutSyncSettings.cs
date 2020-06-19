@@ -39,8 +39,10 @@ namespace ShortcutSync
             {
                 InstalledOnly = savedSettings.InstalledOnly;
                 ForceUpdate = savedSettings.ForceUpdate;
-                ShortcutPath = savedSettings.ShortcutPath;
-                SourceOptions = savedSettings.SourceOptions;
+                if (savedSettings.ShortcutPath != null) 
+                    ShortcutPath = savedSettings.ShortcutPath;
+                if (savedSettings.SourceOptions != null)
+                    SourceOptions = savedSettings.SourceOptions;
                 UpdateOnStartup = savedSettings.UpdateOnStartup;
                 UsePlayAction = savedSettings.UsePlayAction;
                 ExcludeHidden = savedSettings.ExcludeHidden;
