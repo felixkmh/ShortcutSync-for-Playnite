@@ -17,7 +17,6 @@ namespace ShortcutSync
 {
     public class ShortcutSync : Plugin
     {
-        private const string UNDEFINEDSOURCE = "Undefined";
         private static readonly ILogger logger = LogManager.GetLogger();
         private Thread thread;
         private ShortcutSyncSettings settings { get; set; }
@@ -296,7 +295,7 @@ namespace ShortcutSync
             }
             // Creat playnite URI if game is not installed
             // or if Use PlayAction option is disabled
-            if (!game.IsInstalled || !settings.UsePlayAction || GetSourceName(game) == UNDEFINEDSOURCE)
+            if (!game.IsInstalled || !settings.UsePlayAction || GetSourceName(game) == Constants.UNDEFINEDSOURCE)
             {
                 CreateLnkURL(shortcutPath, icon, game);
             } 
@@ -834,7 +833,7 @@ namespace ShortcutSync
         {
             if (game.Source == null)
             {
-                return UNDEFINEDSOURCE;
+                return Constants.UNDEFINEDSOURCE;
             } else
             {
                 return game.Source.Name;

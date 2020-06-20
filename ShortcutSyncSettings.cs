@@ -62,9 +62,9 @@ namespace ShortcutSync
                     SourceOptions.Add(src.Name, false);
                 }
             }
-            if (!SourceOptions.ContainsKey("Undefined"))
+            if (!SourceOptions.ContainsKey(Constants.UNDEFINEDSOURCE))
             {
-                SourceOptions.Add("Undefined", false);
+                SourceOptions.Add(Constants.UNDEFINEDSOURCE, false);
             }
             // Set view up
             var container = (StackPanel)plugin.settingsView.FindName("SourceSettingsStack");
