@@ -51,7 +51,7 @@ namespace ShortcutSync
                         if (FolderIsAccessible(settings.ShortcutPath))
                         {
                             (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
-                            UpdateShortcuts(PlayniteApi.Database.Games);
+                            UpdateShortcuts(PlayniteApi.Database.Games, settings.ForceUpdate);
                         } else
                         {
                             PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
@@ -89,7 +89,7 @@ namespace ShortcutSync
             {
                 if (FolderIsAccessible(settings.ShortcutPath))
                 {
-                    UpdateShortcuts(PlayniteApi.Database.Games);
+                    UpdateShortcuts(PlayniteApi.Database.Games, settings.ForceUpdate);
                 }
                 else
                 {
@@ -109,7 +109,9 @@ namespace ShortcutSync
         private void Games_ItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
         {
             // Update or create shortcuts for newly added games
-            UpdateShortcuts(e.AddedItems.Union(e.RemovedItems));
+            UpdateShortcuts(e.AddedItems, settings.ForceUpdate);
+            // Remove shortcuts to deleted games
+            UpdateShortcuts(e.RemovedItems, forceUpdate: true, removed: true);
         }
 
         /// <summary>
@@ -130,7 +132,7 @@ namespace ShortcutSync
                     Thread.Sleep(10);
                     try
                     {
-                        UpdateShortcuts(from update in e.UpdatedItems where !WasLaunchedOrClosed(update) select update.NewData);
+                        UpdateShortcuts(from update in e.UpdatedItems where !WasLaunchedOrClosed(update) select update.NewData, settings.ForceUpdate);
                         success = true;
                     }
                     catch (Exception)
@@ -170,13 +172,13 @@ namespace ShortcutSync
         /// <param name="multiple">Specifies whether source name should be included in the shortcut
         /// name to prevent conflicts if multiple games have the same shortcut name.</param>
         /// <returns>Status of the associated shortcut.</returns>
-        public UpdateStatus UpdateShortcut(Game game, bool forceUpdate, bool multiple = false)
+        public UpdateStatus UpdateShortcut(Game game, bool forceUpdate, bool multiple = false, bool removed = false)
         {
             UpdateStatus status = UpdateStatus.None;
             // determine whether to create/update the shortcut or to delete it
             bool shortcutExists = existingShortcuts.TryGetValue(game.Id, out string currentPath);
             string desiredPath = GetShortcutPath(game, multiple);
-            bool keepShortcut = ShouldKeepShortcut(game);
+            bool keepShortcut = ShouldKeepShortcut(game) && !removed;
             // Keep/Update shortcut
             if (keepShortcut)
             {
@@ -457,7 +459,7 @@ namespace ShortcutSync
         /// deleted games.
         /// </summary>
         /// <param name="gamesToUpdate">Games to update.</param>
-        public void UpdateShortcuts(IEnumerable<Game> gamesToUpdate, bool forceUpdate = false)
+        public void UpdateShortcuts(IEnumerable<Game> gamesToUpdate, bool forceUpdate = false, bool removed = false)
         {
             bool errorOccured = false;
             // Updatind all games can take some time
@@ -484,7 +486,7 @@ namespace ShortcutSync
                             where gameId != game.Id 
                             select PlayniteApi.Database.Games.Get(gameId));
                     }
-                    if (ShouldKeepShortcut(game))
+                    if (ShouldKeepShortcut(game) && !removed)
                     {
                         foreach (var copy in existing)
                         {
@@ -505,13 +507,13 @@ namespace ShortcutSync
                                 }
                             }
                         }
-                        if (UpdateShortcut(game, forceUpdate, existing.Count > 0) == UpdateStatus.Error)
+                        if (UpdateShortcut(game, forceUpdate, existing.Count > 0, removed) == UpdateStatus.Error)
                         {
                             errorOccured = true;
                         }
                     } else if (existing.Count == 1)
                     {
-                        if (UpdateShortcut(game, forceUpdate, false) == UpdateStatus.Error)
+                        if (UpdateShortcut(game, forceUpdate, false, removed) == UpdateStatus.Error)
                         {
                             errorOccured = true;
                         }
@@ -534,7 +536,7 @@ namespace ShortcutSync
                         }
                     } else
                     {
-                        if (UpdateShortcut(game, forceUpdate, false) == UpdateStatus.Error)
+                        if (UpdateShortcut(game, forceUpdate, false, removed) == UpdateStatus.Error)
                         {
                             errorOccured = true;
                         }
@@ -738,11 +740,17 @@ namespace ShortcutSync
                     Game game = PlayniteApi.Database.Games.Get(gameId);
                     if (game == null)
                     {
-                        logger.Warn($"Shortcut at \"{file}\" conatins Guid \"{gameId}\", but this Id is not contained in the game database.");
-                        // skip if Guid was not found in game databas
-                        continue;
+                        logger.Warn($"Shortcut at \"{file}\" conatins Guid \"{gameId}\", but this Id is not contained in the game database. Will be deleted.");
+                        try
+                        {
+                            System.IO.File.Delete(file);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error(ex, $"Could not remove shortcut at \"{file}\".");
+                        }
                     }
-                    if (games.ContainsKey(game.Id))
+                    else if (games.ContainsKey(game.Id))
                     {
                         logger.Warn($"Shortcut at \"{file}\" is a duplicate for {game.Name} with gameId {game.Id}. Will be deleted.");
                         try
