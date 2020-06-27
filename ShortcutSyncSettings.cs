@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
+using System.Windows.Documents;
 
 namespace ShortcutSync
 {
@@ -51,6 +52,28 @@ namespace ShortcutSync
 
         public void BeginEdit()
         {
+            var updateLabel = (Run)plugin.settingsView.FindName("UpdateLabel");
+            var urlHyperlink = (Hyperlink)plugin.settingsView.FindName("URL");
+            var urlLabel = (TextBlock)plugin.settingsView.FindName("URLLabel");
+            var updateTextBlock = (TextBlock)plugin.settingsView.FindName("UpdateTextBlock");
+            if (plugin.UpdateAvailable(out Version latest, out string url))
+            {
+                updateTextBlock.IsEnabled = true;
+                updateLabel.IsEnabled = true;
+                urlHyperlink.IsEnabled = true;
+                urlLabel.IsEnabled = true;
+                updateLabel.Text = $"New version {latest} available at:\n";
+                urlHyperlink.NavigateUri = new Uri(url);
+                urlLabel.Text = url;
+            } else
+            {
+                updateLabel.Text = "";
+                urlLabel.Text = "";
+                updateLabel.IsEnabled = false;
+                urlHyperlink.IsEnabled = false;
+                urlLabel.IsEnabled = false;
+                updateTextBlock.IsEnabled = false;
+            }
             var bt = (Button)plugin.settingsView.FindName("SelectFolderButton");
             bt.Click += Bt_Click;
             // Get all available source names

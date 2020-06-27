@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
+    <ScrollViewer>
     <StackPanel Margin="5">
         <Label Content="Shortcut Path:"/>
         <Grid>
@@ -27,5 +28,10 @@
         <Label Content="Sources shortcuts are created for:"/>
         <StackPanel x:Name="SourceSettingsStack" HorizontalAlignment="Left" Margin="0,5" VerticalAlignment="Top"/>
 
-    </StackPanel>
+        <TextBlock x:Name="UpdateTextBlock">
+        <Run x:Name="UpdateLabel"></Run>
+        <Hyperlink x:Name="URL" NavigateUri="https://google.de" RequestNavigate="URL_RequestNavigate"><TextBlock x:Name="URLLabel"/></Hyperlink>
+        </TextBlock>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>
