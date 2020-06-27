@@ -56,24 +56,17 @@ namespace ShortcutSync
             var urlHyperlink = (Hyperlink)plugin.settingsView.FindName("URL");
             var urlLabel = (TextBlock)plugin.settingsView.FindName("URLLabel");
             var updateTextBlock = (TextBlock)plugin.settingsView.FindName("UpdateTextBlock");
-            if (plugin.UpdateAvailable(out Version latest, out string url))
+            updateLabel.Text = "ShortcutSync Up-To-Date.";
+            urlLabel.Text = "";
+            var updateAvailableResult = plugin.UpdateAvailable().Result; 
+            if (updateAvailableResult.Available)
             {
-                updateTextBlock.IsEnabled = true;
-                updateLabel.IsEnabled = true;
-                urlHyperlink.IsEnabled = true;
-                urlLabel.IsEnabled = true;
-                updateLabel.Text = $"New version {latest} available at:\n";
-                urlHyperlink.NavigateUri = new Uri(url);
-                urlLabel.Text = url;
-            } else
-            {
-                updateLabel.Text = "";
-                urlLabel.Text = "";
-                updateLabel.IsEnabled = false;
-                urlHyperlink.IsEnabled = false;
-                urlLabel.IsEnabled = false;
-                updateTextBlock.IsEnabled = false;
+                updateLabel.Text = $"New version {updateAvailableResult.LatestVersion} available at:\n";
+                urlHyperlink.NavigateUri = new Uri(updateAvailableResult.Url);
+                urlLabel.Text = updateAvailableResult.Url;
             }
+
+
             var bt = (Button)plugin.settingsView.FindName("SelectFolderButton");
             bt.Click += Bt_Click;
             // Get all available source names

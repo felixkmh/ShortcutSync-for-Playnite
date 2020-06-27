@@ -18,7 +18,6 @@ namespace ShortcutSync
 {
     public class ShortcutSync : Plugin
     {
-        private static readonly GitHubClient github = new GitHubClient(new ProductHeaderValue("ShortcutSync-for-Playnite"));
         private static readonly ILogger logger = LogManager.GetLogger();
         private static readonly Version version = new Version(1, 10);
         private Thread thread;
@@ -36,6 +35,20 @@ namespace ShortcutSync
             Deleted,
             Created,
             Error
+        }
+
+        public class UpdateAvailableResult
+        {
+            public bool Available { get; private set; }
+            public Version LatestVersion { get; private set; }
+            public string Url { get; private set; }
+
+            public UpdateAvailableResult(bool available, Version latestVersion, string url)
+            {
+                Available = available;
+                LatestVersion = latestVersion;
+                Url = url;
+            }
         }
 
         public ShortcutSync(IPlayniteAPI api) : base(api)
@@ -169,8 +182,10 @@ namespace ShortcutSync
             return settingsView;
         }
 
-        public bool UpdateAvailable(out Version latest, out string url)
+        public Task<UpdateAvailableResult> UpdateAvailable()
         {
+            return Task.Run(() => {
+            var github = new GitHubClient(new ProductHeaderValue("ShortcutSync-for-Playnite"));
             var remaining = github.GetLastApiInfo()?.RateLimit.Remaining;
             if (remaining == null)
             {
@@ -193,9 +208,7 @@ namespace ShortcutSync
                         if (latestVersion > version)
                         {
                             logger.Info($"New version of ShortcutSync available. Current {version}, latest {latestVersion}");
-                            latest = latestVersion;
-                            url = release.HtmlUrl;
-                            return true;
+                            return new UpdateAvailableResult(true, latestVersion, release.HtmlUrl);
                         }
                     }
                     logger.Debug($"Latest version: {release.TagName} parsed: {latestVersion}");
@@ -207,9 +220,8 @@ namespace ShortcutSync
                 #endif
                 }
             }
-            latest = default;
-            url = default;
-            return false;
+            return new UpdateAvailableResult(false, default, default);
+            });
         }
 
         /// <summary>
