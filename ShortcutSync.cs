@@ -50,8 +50,13 @@ namespace ShortcutSync
                     {
                         if (FolderIsAccessible(settings.ShortcutPath))
                         {
-                            (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
-                            UpdateShortcuts(PlayniteApi.Database.Games, settings.ForceUpdate);
+                            thread?.Join();
+                            thread = new Thread(() =>
+                            {
+                                (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
+                                UpdateShortcuts(PlayniteApi.Database.Games, settings.ForceUpdate);
+                            });
+                            thread.Start();
                         } else
                         {
                             PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
@@ -64,8 +69,13 @@ namespace ShortcutSync
                     {
                         if (FolderIsAccessible(settings.ShortcutPath))
                         {
-                            (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
-                            UpdateShortcuts(PlayniteApi.MainView.SelectedGames, true);
+                            thread?.Join();
+                            thread = new Thread(() =>
+                            {
+                                (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
+                                UpdateShortcuts(PlayniteApi.MainView.SelectedGames, true);
+                            });
+                            thread.Start();
                         } else
                         {
                             PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
@@ -89,7 +99,12 @@ namespace ShortcutSync
             {
                 if (FolderIsAccessible(settings.ShortcutPath))
                 {
-                    UpdateShortcuts(PlayniteApi.Database.Games, settings.ForceUpdate);
+                    thread?.Join();
+                    thread = new Thread(() =>
+                    {
+                        UpdateShortcuts(PlayniteApi.Database.Games, settings.ForceUpdate);
+                    });
+                    thread.Start();
                 }
                 else
                 {
@@ -122,26 +137,14 @@ namespace ShortcutSync
         /// <param name="e"></param>
         private void Games_ItemUpdated(object sender, ItemUpdatedEventArgs<Game> e)
         {
-            ThreadPool.QueueUserWorkItem((_) =>
+            try
             {
-                bool success = false;
-                for (int i = 0; i < 10; ++i)
-                {
-                    // Workaround because icon files are 
-                    // still locked when ItemUpdated is called
-                    Thread.Sleep(10);
-                    try
-                    {
-                        UpdateShortcuts(from update in e.UpdatedItems where !WasLaunchedOrClosed(update) select update.NewData, settings.ForceUpdate);
-                        success = true;
-                    }
-                    catch (Exception)
-                    {
-                        logger.Debug($"Could not convert icon. Trying again...");
-                    }
-                    if (success) break;
-                }
-            });
+                UpdateShortcuts(from update in e.UpdatedItems where !WasLaunchedOrClosed(update) select update.NewData, settings.ForceUpdate);
+            }
+            catch (Exception)
+            {
+                logger.Debug($"Could not convert icon. Trying again...");
+            }
         }
 
         public override void OnApplicationStopped()
@@ -149,7 +152,6 @@ namespace ShortcutSync
             // Unsubscribe from library change events.
             PlayniteApi.Database.Games.ItemUpdated -= Games_ItemUpdated;
             PlayniteApi.Database.Games.ItemCollectionChanged -= Games_ItemCollectionChanged;
-            thread?.Join();
         }
 
 
@@ -464,8 +466,14 @@ namespace ShortcutSync
             bool errorOccured = false;
             // Updatind all games can take some time
             // execute in a task so main thread is not blocked.
-            thread?.Join();
-            thread = new Thread(() =>
+#if DEBUG
+            logger.Debug("Waiting for thread to finish.");
+#endif
+            // thread?.Join();
+#if DEBUG
+            logger.Debug("Thread finished.");
+#endif
+            /// thread = new Thread(() =>
             {
                 // Buffer updates while updating shortcuts
                 // changes during this process will be handled
@@ -549,8 +557,11 @@ namespace ShortcutSync
                     (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
                 }
                 PlayniteApi.Database.Games.EndBufferUpdate();
-            });
-            thread.Start();
+            }
+#if DEBUG
+            logger.Debug("Starting thread");
+#endif
+            // thread.Start();
         }
 
         /// <summary>
