@@ -12,17 +12,20 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using Octokit;
 
 namespace ShortcutSync
 {
     public class ShortcutSync : Plugin
     {
+        private static readonly GitHubClient github = new GitHubClient(new ProductHeaderValue("ShortcutSync-for-Playnite"));
         private static readonly ILogger logger = LogManager.GetLogger();
+        private static readonly Version version = new Version(1, 10);
         private Thread thread;
         private ShortcutSyncSettings settings { get; set; }
         public ShortcutSyncSettingsView settingsView { get; set; }
         private Dictionary<Guid, string> existingShortcuts { get; set; }
-        private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; } 
+        private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; }
 
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
@@ -164,6 +167,49 @@ namespace ShortcutSync
         {
             settingsView = new ShortcutSyncSettingsView();
             return settingsView;
+        }
+
+        public bool UpdateAvailable(out Version latest, out string url)
+        {
+            var remaining = github.GetLastApiInfo()?.RateLimit.Remaining;
+            if (remaining == null)
+            {
+                try
+                {
+                    remaining = github.Miscellaneous.GetRateLimits().Result.Rate.Remaining;
+                }
+                catch (Exception)
+                {
+                    remaining = 0;
+                }
+            }
+            if (remaining > 0)
+            {
+                try
+                {
+                    var release = github.Repository.Release.GetLatest("felixkmh", "ShortcutSync-for-Playnite").Result;
+                    if (Version.TryParse(release.TagName.Replace("v",""), out Version latestVersion))
+                    {
+                        if (latestVersion > version)
+                        {
+                            logger.Info($"New version of ShortcutSync available. Current {version}, latest {latestVersion}");
+                            latest = latestVersion;
+                            url = release.HtmlUrl;
+                            return true;
+                        }
+                    }
+                    logger.Debug($"Latest version: {release.TagName} parsed: {latestVersion}");
+                }
+                catch (Exception ex)
+                {
+                #if DEBUG
+                logger.Debug(ex, "Could not retrieve latest release.");
+                #endif
+                }
+            }
+            latest = default;
+            url = default;
+            return false;
         }
 
         /// <summary>
