@@ -119,8 +119,6 @@ namespace ShortcutSync
 
         public void EndEdit()
         {
-            var bt = (Button)plugin.settingsView.FindName("SelectFolderButton");
-            bt.Click -= Bt_Click;
             var container = (StackPanel)plugin.settingsView.FindName("SourceSettingsStack");
             foreach (CheckBox checkBox in container.Children)
             {
@@ -136,6 +134,8 @@ namespace ShortcutSync
             // Executed before EndEdit is called and EndEdit is not called if false is returned.
             // List of errors is presented to user if verification fails.
             tempShortcutPath = ((TextBox)plugin.settingsView.FindName("PathTextBox")).Text;
+            var bt = (Button)plugin.settingsView.FindName("SelectFolderButton");
+            bt.Click -= Bt_Click;
             errors = new List<string>();
             try
             {
