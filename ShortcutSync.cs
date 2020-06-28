@@ -543,85 +543,87 @@ namespace ShortcutSync
                 // changes during this process will be handled
                 // by the events afterwards
                 // PlayniteApi.Database.Games.BeginBufferUpdate();
-
-
-                foreach (var game in gamesToUpdate)
+                using (var BufferedStream = PlayniteApi.Database.BufferedUpdate())
                 {
-                    string path = GetShortcutPath(game: game, includeSourceName: false);
-                    string safeGameName = GetSafeFileName(game.Name);
+                    foreach (var game in gamesToUpdate)
+                    {
+                        string path = GetShortcutPath(game: game, includeSourceName: false);
+                        string safeGameName = GetSafeFileName(game.Name);
 
-                    List<Game> existing = new List<Game>();
-                    if (shortcutNameToGameId.ContainsKey(safeGameName.ToLower()))
-                    {
-                        existing.AddRange(
-                            from gameId 
-                            in shortcutNameToGameId[safeGameName.ToLower()] 
-                            where gameId != game.Id 
-                            select PlayniteApi.Database.Games.Get(gameId));
-                    }
-                    if (ShouldKeepShortcut(game) && !removed)
-                    {
-                        foreach (var copy in existing)
+                        List<Game> existing = new List<Game>();
+                        if (shortcutNameToGameId.ContainsKey(safeGameName.ToLower()))
                         {
-                            string newPath = GetShortcutPath(game: copy, includeSourceName: true);
-                            if (existingShortcuts.TryGetValue(copy.Id, out string currentPath))
+                            existing.AddRange(
+                                from gameId 
+                                in shortcutNameToGameId[safeGameName.ToLower()] 
+                                where gameId != game.Id 
+                                select PlayniteApi.Database.Games.Get(gameId));
+                        }
+                        if (ShouldKeepShortcut(game) && !removed)
+                        {
+                            foreach (var copy in existing)
                             {
-                                if (System.IO.Path.GetFileName(currentPath).ToLower() != System.IO.Path.GetFileName(newPath).ToLower())
+                                string newPath = GetShortcutPath(game: copy, includeSourceName: true);
+                                if (existingShortcuts.TryGetValue(copy.Id, out string currentPath))
+                                {
+                                    if (System.IO.Path.GetFileName(currentPath).ToLower() != System.IO.Path.GetFileName(newPath).ToLower())
+                                    {
+                                        try
+                                        {
+                                            System.IO.File.Move(currentPath, newPath);
+                                            existingShortcuts[copy.Id] = newPath;
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name}.");
+                                        }
+                                    }
+                                }
+                            }
+                            if (UpdateShortcut(game, forceUpdate, existing.Count > 0, removed) == UpdateStatus.Error)
+                            {
+                                errorOccured = true;
+                            }
+                        } else if (existing.Count == 1)
+                        {
+                            if (UpdateShortcut(game, forceUpdate, false, removed) == UpdateStatus.Error)
+                            {
+                                errorOccured = true;
+                            }
+                            string newPath = GetShortcutPath(game: existing[0], includeSourceName: false);
+                            string currentPath = existingShortcuts[existing[0].Id];
+                            if (System.IO.Path.GetFileName(currentPath).ToLower() != System.IO.Path.GetFileName(newPath).ToLower())
+                            {
+                                if (!System.IO.File.Exists(newPath))
                                 {
                                     try
                                     {
                                         System.IO.File.Move(currentPath, newPath);
-                                        existingShortcuts[copy.Id] = newPath;
                                     }
                                     catch (Exception ex)
                                     {
                                         logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name}.");
                                     }
+                                    existingShortcuts[existing[0].Id] = newPath;
                                 }
                             }
-                        }
-                        if (UpdateShortcut(game, forceUpdate, existing.Count > 0, removed) == UpdateStatus.Error)
+                        } else
                         {
-                            errorOccured = true;
-                        }
-                    } else if (existing.Count == 1)
-                    {
-                        if (UpdateShortcut(game, forceUpdate, false, removed) == UpdateStatus.Error)
-                        {
-                            errorOccured = true;
-                        }
-                        string newPath = GetShortcutPath(game: existing[0], includeSourceName: false);
-                        string currentPath = existingShortcuts[existing[0].Id];
-                        if (System.IO.Path.GetFileName(currentPath).ToLower() != System.IO.Path.GetFileName(newPath).ToLower())
-                        {
-                            if (!System.IO.File.Exists(newPath))
+                            if (UpdateShortcut(game, forceUpdate, false, removed) == UpdateStatus.Error)
                             {
-                                try
-                                {
-                                    System.IO.File.Move(currentPath, newPath);
-                                }
-                                catch (Exception ex)
-                                {
-                                    logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name}.");
-                                }
-                                existingShortcuts[existing[0].Id] = newPath;
+                                errorOccured = true;
                             }
                         }
-                    } else
-                    {
-                        if (UpdateShortcut(game, forceUpdate, false, removed) == UpdateStatus.Error)
-                        {
-                            errorOccured = true;
-                        }
-                    }
                       
+                    }
+                    if (errorOccured)
+                    {
+                        // Refresh dictionaries to properly reflect current state.
+                        (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
+                    }
+                    // PlayniteApi.Database.Games.EndBufferUpdate();
                 }
-                if (errorOccured)
-                {
-                    // Refresh dictionaries to properly reflect current state.
-                    (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
-                }
-                // PlayniteApi.Database.Games.EndBufferUpdate();
+
             }
 #if DEBUG
             logger.Debug("Starting thread");
