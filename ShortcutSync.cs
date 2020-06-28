@@ -542,7 +542,8 @@ namespace ShortcutSync
                 // Buffer updates while updating shortcuts
                 // changes during this process will be handled
                 // by the events afterwards
-                PlayniteApi.Database.Games.BeginBufferUpdate();
+                // PlayniteApi.Database.Games.BeginBufferUpdate();
+
 
                 foreach (var game in gamesToUpdate)
                 {
@@ -620,7 +621,7 @@ namespace ShortcutSync
                     // Refresh dictionaries to properly reflect current state.
                     (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
                 }
-                PlayniteApi.Database.Games.EndBufferUpdate();
+                // PlayniteApi.Database.Games.EndBufferUpdate();
             }
 #if DEBUG
             logger.Debug("Starting thread");
