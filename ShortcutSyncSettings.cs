@@ -9,6 +9,8 @@ namespace ShortcutSync
 {
     public class ShortcutSyncSettings : ISettings
     {
+        public delegate void OnPathChangedAction(string newPath);
+        public event OnPathChangedAction OnPathChanged;
         private readonly ShortcutSync plugin;
 
         public string ShortcutPath { get; set; } =
@@ -20,6 +22,8 @@ namespace ShortcutSync
         public bool ForceUpdate { get; set; } = false;
         public bool ExcludeHidden { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
+
+        private string tempShortcutPath;
 
         // Parameterless constructor must exist if you want to use LoadPluginSettings method.
         public ShortcutSyncSettings()
@@ -103,8 +107,7 @@ namespace ShortcutSync
             string path = plugin.PlayniteApi.Dialogs.SelectFolder();
             if (!string.IsNullOrEmpty(path))
             {
-                ShortcutPath = path;
-                ((TextBox)plugin.settingsView.FindName("PathTextBox")).Text = ShortcutPath;
+                ((TextBox)plugin.settingsView.FindName("PathTextBox")).Text = path;
             }
         }
 
@@ -132,10 +135,11 @@ namespace ShortcutSync
             // Code execute when user decides to confirm changes made since BeginEdit was called.
             // Executed before EndEdit is called and EndEdit is not called if false is returned.
             // List of errors is presented to user if verification fails.
+            tempShortcutPath = ((TextBox)plugin.settingsView.FindName("PathTextBox")).Text;
             errors = new List<string>();
             try
             {
-                Directory.CreateDirectory(ShortcutPath);
+                Directory.CreateDirectory(tempShortcutPath);
             }
             catch (Exception ex)
             {
@@ -145,13 +149,16 @@ namespace ShortcutSync
             // Check whether user has write persmission to the selected folder
             try
             {
-                var ac = Directory.GetAccessControl(ShortcutPath);
+                var ac = Directory.GetAccessControl(tempShortcutPath);
             }
             catch (UnauthorizedAccessException)
             {
                 errors.Add("The selected folder cannot be written to. Please select another folder.");
                 return false;
             }
+            if (ShortcutPath != tempShortcutPath)
+                OnPathChanged?.Invoke(tempShortcutPath);
+            ShortcutPath = tempShortcutPath;
             return true;
         }
     }

@@ -129,6 +129,12 @@ namespace ShortcutSync
             } 
             PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
             PlayniteApi.Database.Games.ItemCollectionChanged += Games_ItemCollectionChanged;
+            settings.OnPathChanged += Settings_OnPathChanged;
+        }
+
+        private void Settings_OnPathChanged(string newPath)
+        {
+            (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(newPath);
         }
 
         /// <summary>
