@@ -19,13 +19,13 @@ namespace ShortcutSync
     public class ShortcutSync : Plugin
     {
         private static readonly ILogger logger = LogManager.GetLogger();
-        private static readonly Version version = new Version(1, 10);
         private Thread thread;
         private ShortcutSyncSettings settings { get; set; }
         public ShortcutSyncSettingsView settingsView { get; set; }
         private Dictionary<Guid, string> existingShortcuts { get; set; }
         private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; }
 
+        public readonly Version version = new Version(1, 11);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
         public enum UpdateStatus
@@ -50,6 +50,7 @@ namespace ShortcutSync
                 Url = url;
             }
         }
+
 
         public ShortcutSync(IPlayniteAPI api) : base(api)
         {

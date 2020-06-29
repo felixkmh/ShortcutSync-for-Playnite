@@ -30,7 +30,7 @@
 
         <TextBlock x:Name="UpdateTextBlock">
         <Run x:Name="UpdateLabel"></Run>
-        <Hyperlink x:Name="URL" NavigateUri="https://google.de" RequestNavigate="URL_RequestNavigate"><TextBlock x:Name="URLLabel"/></Hyperlink>
+        <Hyperlink Name="URL" NavigateUri="https://google.de" RequestNavigate="URL_RequestNavigate"><TextBlock x:Name="URLLabel"/></Hyperlink>
         </TextBlock>
         </StackPanel>
     </ScrollViewer>

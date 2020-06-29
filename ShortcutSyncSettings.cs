@@ -56,20 +56,21 @@ namespace ShortcutSync
 
         public void BeginEdit()
         {
-            var updateLabel = (Run)plugin.settingsView.FindName("UpdateLabel");
-            var urlHyperlink = (Hyperlink)plugin.settingsView.FindName("URL");
-            var urlLabel = (TextBlock)plugin.settingsView.FindName("URLLabel");
-            var updateTextBlock = (TextBlock)plugin.settingsView.FindName("UpdateTextBlock");
-            updateLabel.Text = "ShortcutSync Up-To-Date.";
-            urlLabel.Text = "";
-            var updateAvailableResult = plugin.UpdateAvailable().Result; 
-            if (updateAvailableResult.Available)
-            {
-                updateLabel.Text = $"New version {updateAvailableResult.LatestVersion} available at:\n";
-                urlHyperlink.NavigateUri = new Uri(updateAvailableResult.Url);
-                urlLabel.Text = updateAvailableResult.Url;
-            }
-
+            plugin.settingsView.UpdateTextBlock.Visibility = System.Windows.Visibility.Collapsed;
+            plugin.UpdateAvailable().ContinueWith((task) => {
+                var updateAvailable = task.Result.Available;
+                var url = task.Result.Url;
+                var latestVersion = task.Result.LatestVersion;
+                plugin.settingsView.Dispatcher.Invoke(() => {
+                    if (updateAvailable)
+                    {
+                        plugin.settingsView.UpdateTextBlock.Visibility = System.Windows.Visibility.Visible;
+                        plugin.settingsView.UpdateLabel.Text = $"New version {latestVersion} available at:\n";
+                        plugin.settingsView.URL.NavigateUri = new Uri(url);
+                        plugin.settingsView.URLLabel.Text = url;
+                    }
+                });
+            });
 
             var bt = (Button)plugin.settingsView.FindName("SelectFolderButton");
             bt.Click += Bt_Click;
