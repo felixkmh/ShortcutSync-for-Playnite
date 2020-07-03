@@ -164,7 +164,7 @@ namespace ShortcutSync
             {
                 UpdateShortcuts(from update in e.UpdatedItems where !WasLaunchedOrClosed(update) select update.NewData, settings.ForceUpdate);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 logger.Debug($"Could not convert icon. Trying again...");
             }
@@ -544,7 +544,7 @@ namespace ShortcutSync
                 // changes during this process will be handled
                 // by the events afterwards
                 // PlayniteApi.Database.Games.BeginBufferUpdate();
-                using (var BufferedStream = PlayniteApi.Database.BufferedUpdate())
+                // using (var BufferedStream = PlayniteApi.Database.BufferedUpdate())
                 {
                     foreach (var game in gamesToUpdate)
                     {
