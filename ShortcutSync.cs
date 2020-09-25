@@ -13,6 +13,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using Octokit;
+using System.CodeDom.Compiler;
+using System.Diagnostics;
+using Microsoft.CSharp;
+using System.Text;
+using System.Drawing;
 
 namespace ShortcutSync
 {
@@ -25,7 +30,7 @@ namespace ShortcutSync
         private Dictionary<Guid, string> existingShortcuts { get; set; }
         private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; }
 
-        public readonly Version version = new Version(1, 11);
+        public readonly Version version = new Version(1, 12);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
         public enum UpdateStatus
@@ -97,6 +102,31 @@ namespace ShortcutSync
                         {
                             PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
                         }
+                    }),
+                new ExtensionFunction(
+                    "Compile launcher for selected games",
+                    () =>
+                    {
+                        
+                        foreach(var game in PlayniteApi.MainView.SelectedGames)
+                        {
+                            CreateExecutableShortcut(game, settings.ShortcutPath);
+                        }
+                        
+
+                    }),
+                new ExtensionFunction(
+                    "Create vbs launcher for selected games",
+                    () =>
+                    {
+
+                        foreach(var game in PlayniteApi.MainView.SelectedGames)
+                        {
+                            CreateVisualElementsManifest(game, settings.ShortcutPath);
+                            CreateVbsLauncher(game, settings.ShortcutPath);
+                        }
+
+
                     })
             };
         }
@@ -925,6 +955,157 @@ namespace ShortcutSync
             {
                 return game.Source.Name;
             }
+        }
+
+        private bool CreateExecutableShortcut(Game game, string folderPath)
+        {
+            CSharpCodeProvider codeProvider = new CSharpCodeProvider();
+            string output = Path.Combine(folderPath, $"{game.Id}.exe");
+            StringBuilder compilerOptions = new StringBuilder();
+            string iconPath = Path.Combine(PlayniteApi.Database.GetFileStoragePath(game.Id), Path.GetFileName(game.Icon));
+            compilerOptions.Append("/optimize ");
+            if (Path.GetExtension(iconPath).ToLower() == ".ico")
+            {
+                compilerOptions.Append($"/win32icon:\"");
+                compilerOptions.Append(iconPath);
+                compilerOptions.Append("\"");
+            }
+            var parameters = new CompilerParameters
+            {
+                GenerateExecutable = true,
+                OutputAssembly = output,
+                CompilerOptions = compilerOptions.ToString()
+            };
+            parameters.ReferencedAssemblies.Add("System.dll");
+            parameters.ReferencedAssemblies.Add("System.Diagnostics.Process.dll");
+            var results = codeProvider.CompileAssemblyFromSource(parameters, 
+                "using System;\n" +
+                "using System.Diagnostics;\n" +
+                "namespace ShortcutLauncher{\n" +
+                    "class Launch{\n" +
+                        "static void Main(string[] args){\n" +
+                            "var startInfo = new ProcessStartInfo();\n" +
+                            $"startInfo.FileName= \"cmd.exe\";\n" +
+                            $"startInfo.Arguments = \"/c start playnite://playnite/start/{game.Id}\";\n" +
+                            "startInfo.CreateNoWindow = true;\n" +
+                            "startInfo.UseShellExecute = false;\n" +
+                            "startInfo.WindowStyle = ProcessWindowStyle.Hidden;\n" +
+                            "System.Diagnostics.Process.Start(startInfo);\n" +
+                        "}\n" +
+                    "}\n" +
+                "}");
+
+            if (results.Errors.Count > 0)
+            {
+                string errors = "";
+                foreach (CompilerError CompErr in results.Errors)
+                {
+                    errors = errors +
+                                "Line number " + CompErr.Line +
+                                ", Error Number: " + CompErr.ErrorNumber +
+                                ", '" + CompErr.ErrorText + ";" +
+                                Environment.NewLine + Environment.NewLine;
+                }
+                logger.Error($"Could not compile launcher for {game.Name}. Errors:\n" + errors);
+                return false;
+            } else
+            {
+                logger.Debug($"Succesfully compiled launcher for {game.Name}");
+                return true;
+            }
+        }
+
+        private string CreateVbsLauncher(Game game, string folderPath)
+        {
+            string fileName = $"{game.Id}.vbs";
+            string fullPath = Path.Combine(folderPath, fileName);
+            string script = 
+                "Dim prefix, id\n" +
+
+                "prefix = \"playnite://playnite/start/\"\n" +
+                $"id = \"{game.Id}\"\n" +
+
+                "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
+                "WshShell.Run prefix &id, 1";
+            try
+            {
+                using (var scriptFile = System.IO.File.CreateText(fullPath))
+                {
+                    scriptFile.Write(script);
+                }
+                return fullPath;
+            }
+            catch (Exception)
+            {
+
+            }
+            
+            return string.Empty;
+        }
+
+        private string CreateVisualElementsManifest(Game game, string folderPath)
+        {
+            string fileName = $"{game.Id}.visualelementsmanifest.xml";
+            string fullPath = Path.Combine(folderPath, fileName);
+            string iconPath = Path.Combine(PlayniteApi.Database.GetFileStoragePath(game.Id), Path.GetFileName(game.Icon));
+            Bitmap bitmap;
+            if (Path.GetExtension(game.Icon).ToLower() == ".ico")
+            {
+                var icon = new Icon(iconPath, 150, 150);
+                bitmap = icon.ToBitmap();
+            } else
+            {
+                bitmap = new Bitmap(iconPath);
+            }
+            var bgColor = GetDominantColor(bitmap);
+
+            string script =
+                "<Application xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" + 
+                "<VisualElements\n" + 
+                $"BackgroundColor = \"#{bgColor.R:X2}{bgColor.G:X2}{bgColor.B:X2}\"\n" + 
+                "ShowNameOnSquare150x150Logo = \"on\"\n" + 
+                "ForegroundText = \"light\"\n" +
+                $"Square150x150Logo = \"Icons\\{game.Id}.png\"\n" + 
+                $"Square70x70Logo = \"Icons\\{game.Id}.png\"/>\n" + 
+                "</Application>";
+            bitmap.Save(Path.Combine(folderPath, "Icons", $"{game.Id}.png"), ImageFormat.Png);
+            try
+            {
+                using (var scriptFile = System.IO.File.CreateText(fullPath))
+                {
+                    scriptFile.Write(script);
+                }
+                return fullPath;
+            }
+            catch (Exception)
+            {
+
+            }
+
+            return string.Empty;
+        }
+
+        private System.Drawing.Color GetDominantColor(System.Drawing.Bitmap bitmap)
+        {
+            float r = 0f, g = 0f, b = 0f;
+            for (int y = 0; y < bitmap.Height; ++y)
+                for (int x = 0; x < bitmap.Width; ++x)
+                {
+                    var pixelColor = bitmap.GetPixel(x, y);
+                    float alpha = pixelColor.A / 255.0f;
+                    r += (alpha / 255.0f) * pixelColor.R;
+                    g += (alpha / 255.0f) * pixelColor.G;
+                    b += (alpha / 255.0f) * pixelColor.B;
+                }
+            r *= r * r;
+            g *= g * g;
+            b *= b * b;
+            var max = Math.Max(r, Math.Max(g, b));
+            r = 255 * r / max;
+            g = 255 * g / max;
+            b = 255 * b / max;
+            var color = System.Drawing.Color.FromArgb(255, (int)r, (int)g, (int)b);
+            return color;
         }
     }
 }
