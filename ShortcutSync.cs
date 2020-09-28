@@ -1148,8 +1148,11 @@ namespace ShortcutSync
                     Bitmap resized = new Bitmap(newWidth, newHeight);
                     using (Graphics graphics = Graphics.FromImage(resized))
                     {
-                        if (bitmap.Width < 150 && bitmap.Height < 150)
+                        if (bitmap.Width <= 64 && bitmap.Height <= 64)
+                        {
                             graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                            graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+                        }
                         graphics.DrawImage(bitmap, 0, 0, newWidth, newHeight);
                     }
 
