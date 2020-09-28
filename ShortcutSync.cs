@@ -104,7 +104,7 @@ namespace ShortcutSync
                         {
                             PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
                         }
-                    }),
+                    })/*,
                 new ExtensionFunction(
                     "Compile launcher for selected games",
                     () =>
@@ -129,7 +129,7 @@ namespace ShortcutSync
                         }
 
 
-                    })
+                    })*/
             };
         }
 
@@ -404,7 +404,7 @@ namespace ShortcutSync
             {
                 CreateVbsLauncher(game, GetLauncherScriptPath(settings.ShortcutPath));
                 CreateVisualElementsManifest(game, GetLauncherScriptPath(settings.ShortcutPath));
-                CreateLnkURL(shortcutPath, icon, game);
+                CreateLnkURLToVbs(shortcutPath, icon, game);
             } 
             else 
             {
@@ -730,6 +730,15 @@ namespace ShortcutSync
         /// <param name="iconPath"></param>
         /// <param name="game"></param>
         public void CreateLnkURL(string path, string iconPath, Game game)
+        {
+            CreateLnk(
+                shortcutPath: path,
+                targetPath: $"playnite://playnite/start/{game.Id}",
+                iconPath: iconPath,
+                description: "Launch " + game.Name + " on " + GetSourceName(game) + " via Playnite." + $" [{game.Id}]");
+        }
+
+        public void CreateLnkURLToVbs(string path, string iconPath, Game game)
         {
             CreateLnk(
                 shortcutPath: path,
