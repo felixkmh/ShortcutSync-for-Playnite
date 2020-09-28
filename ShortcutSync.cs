@@ -20,6 +20,7 @@ using System.Text;
 using System.Drawing;
 using System.Security.AccessControl;
 using System.Windows.Forms;
+using System.Drawing.IconLib;
 
 namespace ShortcutSync
 {
@@ -74,6 +75,7 @@ namespace ShortcutSync
                     {
                         if (FolderIsAccessible(settings.ShortcutPath))
                         {
+                            CreateFolderStructure(settings.ShortcutPath);
                             thread?.Join();
                             thread = new Thread(() =>
                             {
@@ -570,11 +572,11 @@ namespace ShortcutSync
             // Updatind all games can take some time
             // execute in a task so main thread is not blocked.
 #if DEBUG
-            logger.Debug("Waiting for thread to finish.");
+            // logger.Debug("Waiting for thread to finish.");
 #endif
             // thread?.Join();
 #if DEBUG
-            logger.Debug("Thread finished.");
+            // logger.Debug("Thread finished.");
 #endif
             /// thread = new Thread(() =>
             {
@@ -665,7 +667,7 @@ namespace ShortcutSync
 
             }
 #if DEBUG
-            logger.Debug("Starting thread");
+            // logger.Debug("Starting thread");
 #endif
             // thread.Start();
         }
@@ -1080,11 +1082,40 @@ namespace ShortcutSync
             if (!Path.GetFileName(game.Icon).IsNullOrEmpty())
             {
                 string iconPath = Path.Combine(PlayniteApi.Database.GetFileStoragePath(game.Id), Path.GetFileName(game.Icon));
-                Bitmap bitmap;
+                Bitmap bitmap = null;
                 if (Path.GetExtension(game.Icon).ToLower() == ".ico")
                 {
-                    using (var icon = new Icon(iconPath, 150, 150))
-                        bitmap = icon.ToBitmap();
+                    using (var stream = System.IO.File.OpenRead(iconPath))
+                    {
+                        var i = new System.Drawing.IconLib.MultiIcon();
+                        i.Load(stream);
+                        int maxIndex = 0;
+                        int maxWidth = 0;
+                        int index = 0;
+                        foreach(var imag in i[0])
+                        {
+                            if (imag.Size.Width >= 150 && imag.Size.Height >= 150)
+                            {
+                                // logger.Info($"Icon size: {imag.Size} for {game.Name}.");
+                                bitmap = imag.Icon.ToBitmap();
+                                break;
+                            }
+                            if (imag.Size.Width > maxWidth)
+                            {
+                                maxIndex = index;
+                                maxWidth = imag.Size.Width;
+                                bitmap = imag.Icon.ToBitmap();
+                            }
+                            ++index;
+                        }
+                        
+
+                        using (var icon = new Icon(iconPath, 1000, 1000))
+                        {
+                            // logger.Info($"Icon size: {icon.Size} for {game.Name}.");
+                            // bitmap = icon.ToBitmap();
+                        }
+                    }
                 } else
                 {
                     bitmap = new Bitmap(iconPath);
@@ -1095,7 +1126,33 @@ namespace ShortcutSync
                 // backgroundColorCode = $"#{bgColor.R:X2}{bgColor.G:X2}{bgColor.B:X2}";
                 var colorThief = new ColorThiefDotNet.ColorThief();
                 backgroundColorCode = colorThief.GetColor(bitmap).Color.ToHexString();
-                bitmap.Save(Path.Combine(folderPath, Constants.ICONFOLDERNAME, $"{game.Id}.png"), ImageFormat.Png);
+
+                if (bitmap.Width > 150  && bitmap.Height > 150)
+                {
+                    // resize
+                    int newWidth = 150;
+                    int newHeight = 150;
+                    if (bitmap.Width >= bitmap.Height)
+                    {
+                        float scale = (float)newHeight / bitmap.Height;
+                        newWidth = (int)Math.Round(bitmap.Width * scale);
+                    } else
+                    {
+                        float scale = (float)newWidth / bitmap.Width;
+                        newHeight = (int)Math.Round(bitmap.Height * scale);
+                    }
+                    Bitmap resized = new Bitmap(newWidth, newHeight);
+                    using (Graphics graphics = Graphics.FromImage(resized))
+                    {
+                        graphics.DrawImage(bitmap, 0, 0, newWidth, newHeight);
+                    }
+
+                    resized.Save(Path.Combine(folderPath, Constants.ICONFOLDERNAME, $"{game.Id}.png"), ImageFormat.Png);
+                    resized.Dispose();
+                } else
+                {
+                    bitmap.Save(Path.Combine(folderPath, Constants.ICONFOLDERNAME, $"{game.Id}.png"), ImageFormat.Png);
+                }
                 bitmap.Dispose();
             }
 
