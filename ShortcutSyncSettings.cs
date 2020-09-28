@@ -9,7 +9,7 @@ namespace ShortcutSync
 {
     public class ShortcutSyncSettings : ISettings
     {
-        public delegate void OnPathChangedAction(string newPath);
+        public delegate void OnPathChangedAction(string oldPath, string newPath);
         public event OnPathChangedAction OnPathChanged;
         private readonly ShortcutSync plugin;
 
@@ -23,7 +23,6 @@ namespace ShortcutSync
         public bool ExcludeHidden { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
 
-        private string tempShortcutPath;
 
         // Parameterless constructor must exist if you want to use LoadPluginSettings method.
         public ShortcutSyncSettings()
@@ -88,7 +87,7 @@ namespace ShortcutSync
                 SourceOptions.Add(Constants.UNDEFINEDSOURCE, false);
             }
             // Set view up
-            var container = (StackPanel)plugin.settingsView.FindName("SourceSettingsStack");
+            var container = plugin.settingsView.SourceSettingsStack;
             container.Children.Clear();
             foreach (var srcOpt in SourceOptions)
             {
@@ -108,7 +107,7 @@ namespace ShortcutSync
             string path = plugin.PlayniteApi.Dialogs.SelectFolder();
             if (!string.IsNullOrEmpty(path))
             {
-                ((TextBox)plugin.settingsView.FindName("PathTextBox")).Text = path;
+                plugin.settingsView.PathTextBox.Text = path;
             }
         }
 
@@ -120,7 +119,7 @@ namespace ShortcutSync
 
         public void EndEdit()
         {
-            var container = (StackPanel)plugin.settingsView.FindName("SourceSettingsStack");
+            var container = plugin.settingsView.SourceSettingsStack;
             foreach (CheckBox checkBox in container.Children)
             {
                 SourceOptions[checkBox.Content.ToString()] = (bool)checkBox.IsChecked;
@@ -134,8 +133,8 @@ namespace ShortcutSync
             // Code execute when user decides to confirm changes made since BeginEdit was called.
             // Executed before EndEdit is called and EndEdit is not called if false is returned.
             // List of errors is presented to user if verification fails.
-            tempShortcutPath = ((TextBox)plugin.settingsView.FindName("PathTextBox")).Text;
-            var bt = (Button)plugin.settingsView.FindName("SelectFolderButton");
+            var tempShortcutPath = plugin.settingsView.PathTextBox.Text;
+            var bt = plugin.settingsView.SelectFolderButton;
             bt.Click -= Bt_Click;
             errors = new List<string>();
             try
@@ -157,9 +156,12 @@ namespace ShortcutSync
                 errors.Add("The selected folder cannot be written to. Please select another folder.");
                 return false;
             }
+            ShortcutSync.logger.Info($"Verified Settings. Old {ShortcutPath}. New {tempShortcutPath}");
             if (ShortcutPath != tempShortcutPath)
-                OnPathChanged?.Invoke(tempShortcutPath);
-            ShortcutPath = tempShortcutPath;
+            {
+                OnPathChanged?.Invoke(ShortcutPath, tempShortcutPath);
+                ShortcutPath = tempShortcutPath;
+            }
             return true;
         }
     }
