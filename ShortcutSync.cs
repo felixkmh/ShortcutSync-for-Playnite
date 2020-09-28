@@ -1075,13 +1075,17 @@ namespace ShortcutSync
 
         private string CreateVisualElementsManifest(Game game, string folderPath)
         {
+#if DEBUG
+            logger.Debug($"Creating xml for {game.Name}.");
+#endif
             string fileName = $"{game.Id}.visualelementsmanifest.xml";
             string fullPath = Path.Combine(folderPath, fileName);
             string foregroundTextStyle = "light";
             string backgroundColorCode = "#000000";
-            if (!Path.GetFileName(game.Icon).IsNullOrEmpty())
+            if (   !Path.GetFileName(game.Icon).IsNullOrEmpty()
+                && System.IO.File.Exists(GetIconPath(game)))
             {
-                string iconPath = Path.Combine(PlayniteApi.Database.GetFileStoragePath(game.Id), Path.GetFileName(game.Icon));
+                string iconPath = GetIconPath(game);
                 Bitmap bitmap = null;
                 if (Path.GetExtension(game.Icon).ToLower() == ".ico")
                 {
@@ -1120,15 +1124,15 @@ namespace ShortcutSync
                 {
                     bitmap = new Bitmap(iconPath);
                 }
-                // var bgColor = GetDominantColor(bitmap);
-                var brightness = GetAverageBrightness(bitmap);
-                foregroundTextStyle = brightness > 0.5f ? "dark" : "light";
-                // backgroundColorCode = $"#{bgColor.R:X2}{bgColor.G:X2}{bgColor.B:X2}";
-                var colorThief = new ColorThiefDotNet.ColorThief();
-                backgroundColorCode = colorThief.GetColor(bitmap).Color.ToHexString();
-
-                if (bitmap.Width > 150  && bitmap.Height > 150)
+                if (bitmap != null && bitmap.Width > 0 && bitmap.Height > 0)
                 {
+                    var brightness = GetAverageBrightness(bitmap);
+                    foregroundTextStyle = brightness > 0.4f ? "dark" : "light";
+                    // var colorThief = new ColorThiefDotNet.ColorThief();
+                    // backgroundColorCode = colorThief.GetColor(bitmap, 10, false).Color.ToHexString();
+                    var bgColor = GetDominantColor(bitmap, brightness);
+                    backgroundColorCode = $"#{bgColor.R:X2}{bgColor.G:X2}{bgColor.B:X2}";
+
                     // resize
                     int newWidth = 150;
                     int newHeight = 150;
@@ -1144,14 +1148,13 @@ namespace ShortcutSync
                     Bitmap resized = new Bitmap(newWidth, newHeight);
                     using (Graphics graphics = Graphics.FromImage(resized))
                     {
+                        if (bitmap.Width < 150 && bitmap.Height < 150)
+                            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
                         graphics.DrawImage(bitmap, 0, 0, newWidth, newHeight);
                     }
 
                     resized.Save(Path.Combine(folderPath, Constants.ICONFOLDERNAME, $"{game.Id}.png"), ImageFormat.Png);
                     resized.Dispose();
-                } else
-                {
-                    bitmap.Save(Path.Combine(folderPath, Constants.ICONFOLDERNAME, $"{game.Id}.png"), ImageFormat.Png);
                 }
                 bitmap.Dispose();
             }
@@ -1198,7 +1201,7 @@ namespace ShortcutSync
             return count > 0 ? accumulator / count : 0f;
         }
 
-        private Color GetDominantColor(Bitmap bitmap)
+        private Color GetDominantColor(Bitmap bitmap, float brightness = 0.5f)
         {
             float r = 0f, g = 0f, b = 0f;
             for (int y = 0; y < bitmap.Height; ++y)
@@ -1211,14 +1214,29 @@ namespace ShortcutSync
                     g += (alpha / 255.0f) * pixelColor.G;
                     b += (alpha / 255.0f) * pixelColor.B;
                 }
-            r *= r * r;
-            g *= g * g;
-            b *= b * b;
+            r *= r;
+            g *= g;
+            b *= b;
             var max = Math.Max(r, Math.Max(g, b));
+            max = max <= 0.00001 ? 1 : max;
             r = 255 * r / max;
             g = 255 * g / max;
             b = 255 * b / max;
-            var color = System.Drawing.Color.FromArgb(255, (int)r, (int)g, (int)b);
+            var color = System.Drawing.Color.FromArgb(
+                    alpha: 255, 
+                    red:   Math.Max(0, (int)Math.Min(255, r)), 
+                    green: Math.Max(0, (int)Math.Min(255, g)), 
+                    blue:  Math.Max(0, (int)Math.Min(255, b))
+                );
+            var brightnessFactor = 0;
+            if (Math.Abs(brightness) - Math.Abs(color.GetBrightness()) < 0.3)
+                brightnessFactor = brightness >= 0.5f ? -1 : 1;
+            color = System.Drawing.Color.FromArgb(
+                    alpha: 255,
+                    red: Math.Max(0, (int)Math.Min(255, color.R + brightnessFactor * 50)),
+                    green: Math.Max(0, (int)Math.Min(255, color.G + brightnessFactor * 50)),
+                    blue: Math.Max(0, (int)Math.Min(255, color.B + brightnessFactor * 50))
+                );
             return color;
         }
 
@@ -1341,6 +1359,11 @@ namespace ShortcutSync
                 Directory.Move(source, target);
             }
             return true;
+        }
+
+        private string GetIconPath(Game game)
+        {
+            return Path.Combine(PlayniteApi.Database.GetFileStoragePath(game.Id), Path.GetFileName(game.Icon));
         }
     }
 }
