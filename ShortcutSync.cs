@@ -18,12 +18,14 @@ using System.Diagnostics;
 using Microsoft.CSharp;
 using System.Text;
 using System.Drawing;
+using System.Security.AccessControl;
+using System.Windows.Forms;
 
 namespace ShortcutSync
 {
     public class ShortcutSync : Plugin
     {
-        private static readonly ILogger logger = LogManager.GetLogger();
+        public static readonly ILogger logger = LogManager.GetLogger();
         private Thread thread;
         private ShortcutSyncSettings settings { get; set; }
         public ShortcutSyncSettingsView settingsView { get; set; }
@@ -133,39 +135,43 @@ namespace ShortcutSync
 
         public override void OnApplicationStarted()
         {
-            try
+            if (CreateFolderStructure(settings.ShortcutPath))
             {
-                Directory.CreateDirectory(settings.ShortcutPath);
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "Could not create directory \"{settings.ShortcutPath}\". Try choosing another folder.");
-            }
-            (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
-            if (settings.UpdateOnStartup)
-            {
-                if (FolderIsAccessible(settings.ShortcutPath))
+                (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
+                if (settings.UpdateOnStartup)
                 {
-                    thread?.Join();
-                    thread = new Thread(() =>
+                    if (FolderIsAccessible(settings.ShortcutPath))
                     {
-                        UpdateShortcuts(PlayniteApi.Database.Games, settings.ForceUpdate);
-                    });
-                    thread.Start();
-                }
-                else
-                {
-                    PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
-                }
-            } 
-            PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
-            PlayniteApi.Database.Games.ItemCollectionChanged += Games_ItemCollectionChanged;
+                        thread?.Join();
+                        thread = new Thread(() =>
+                        {
+                            UpdateShortcuts(PlayniteApi.Database.Games, settings.ForceUpdate);
+                        });
+                        thread.Start();
+                    }
+                    else
+                    {
+                        PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
+                    }
+                } 
+                PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
+                PlayniteApi.Database.Games.ItemCollectionChanged += Games_ItemCollectionChanged;
+            } else
+            {
+                logger.Error("Could not create directory \"{settings.ShortcutPath}\". Try choosing another folder.");
+            }
             settings.OnPathChanged += Settings_OnPathChanged;
         }
 
-        private void Settings_OnPathChanged(string newPath)
+        private void Settings_OnPathChanged(string oldPath, string newPath)
         {
-            (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(newPath);
+            // if (MoveShortcutPath(oldPath, newPath))
+            {
+                if (CreateFolderStructure(newPath))
+                {
+                    (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(newPath);
+                }
+            }
         }
 
         /// <summary>
@@ -213,7 +219,7 @@ namespace ShortcutSync
             return settings;
         }
 
-        public override UserControl GetSettingsView(bool firstRunSettings)
+        public override System.Windows.Controls.UserControl GetSettingsView(bool firstRunSettings)
         {
             settingsView = new ShortcutSyncSettingsView();
             return settingsView;
@@ -365,7 +371,7 @@ namespace ShortcutSync
 
             if (System.IO.File.Exists(icon))
             {
-                if (Path.GetExtension(icon) != ".ico")
+                if (Path.GetExtension(icon).ToLower() != ".ico")
                 {
                     // Check if icon has already been converted before
                     var iconFiles = new string[0];
@@ -394,8 +400,10 @@ namespace ShortcutSync
             }
             // Creat playnite URI if game is not installed
             // or if Use PlayAction option is disabled
-            if (!game.IsInstalled || !settings.UsePlayAction || GetSourceName(game) == Constants.UNDEFINEDSOURCE)
+            if (true || !game.IsInstalled || !settings.UsePlayAction || GetSourceName(game) == Constants.UNDEFINEDSOURCE)
             {
+                CreateVbsLauncher(game, GetLauncherScriptPath(settings.ShortcutPath));
+                CreateVisualElementsManifest(game, GetLauncherScriptPath(settings.ShortcutPath));
                 CreateLnkURL(shortcutPath, icon, game);
             } 
             else 
@@ -725,7 +733,7 @@ namespace ShortcutSync
         {
             CreateLnk(
                 shortcutPath: path,
-                targetPath: $"playnite://playnite/start/{game.Id}",
+                targetPath: $"{GetLauncherScriptPath(settings.ShortcutPath)}\\{game.Id}.vbs",
                 iconPath: iconPath,
                 description: "Launch " + game.Name + " on " + GetSourceName(game) + " via Playnite." + $" [{game.Id}]");
         }
@@ -1043,32 +1051,54 @@ namespace ShortcutSync
             return string.Empty;
         }
 
+        private bool CreateLauncherShortcut(Game game, string shortcutFolderPath, string launcherFolderPath)
+        {
+            CreateLnk(
+                shortcutPath: Path.Combine(shortcutFolderPath, game.Name + ".lnk"),
+                targetPath: Path.Combine(launcherFolderPath, game.GameId + ".vbs"),
+                iconPath: "",
+                description: ""
+                );
+            return true;
+        }
+
         private string CreateVisualElementsManifest(Game game, string folderPath)
         {
             string fileName = $"{game.Id}.visualelementsmanifest.xml";
             string fullPath = Path.Combine(folderPath, fileName);
-            string iconPath = Path.Combine(PlayniteApi.Database.GetFileStoragePath(game.Id), Path.GetFileName(game.Icon));
-            Bitmap bitmap;
-            if (Path.GetExtension(game.Icon).ToLower() == ".ico")
+            string foregroundTextStyle = "light";
+            string backgroundColorCode = "#000000";
+            if (!Path.GetFileName(game.Icon).IsNullOrEmpty())
             {
-                var icon = new Icon(iconPath, 150, 150);
-                bitmap = icon.ToBitmap();
-            } else
-            {
-                bitmap = new Bitmap(iconPath);
+                string iconPath = Path.Combine(PlayniteApi.Database.GetFileStoragePath(game.Id), Path.GetFileName(game.Icon));
+                Bitmap bitmap;
+                if (Path.GetExtension(game.Icon).ToLower() == ".ico")
+                {
+                    using (var icon = new Icon(iconPath, 150, 150))
+                        bitmap = icon.ToBitmap();
+                } else
+                {
+                    bitmap = new Bitmap(iconPath);
+                }
+                // var bgColor = GetDominantColor(bitmap);
+                var brightness = GetAverageBrightness(bitmap);
+                foregroundTextStyle = brightness > 0.5f ? "dark" : "light";
+                // backgroundColorCode = $"#{bgColor.R:X2}{bgColor.G:X2}{bgColor.B:X2}";
+                var colorThief = new ColorThiefDotNet.ColorThief();
+                backgroundColorCode = colorThief.GetColor(bitmap).Color.ToHexString();
+                bitmap.Save(Path.Combine(folderPath, Constants.ICONFOLDERNAME, $"{game.Id}.png"), ImageFormat.Png);
+                bitmap.Dispose();
             }
-            var bgColor = GetDominantColor(bitmap);
 
             string script =
                 "<Application xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" + 
                 "<VisualElements\n" + 
-                $"BackgroundColor = \"#{bgColor.R:X2}{bgColor.G:X2}{bgColor.B:X2}\"\n" + 
+                $"BackgroundColor = \"{backgroundColorCode}\"\n" + 
                 "ShowNameOnSquare150x150Logo = \"on\"\n" + 
-                "ForegroundText = \"light\"\n" +
-                $"Square150x150Logo = \"Icons\\{game.Id}.png\"\n" + 
-                $"Square70x70Logo = \"Icons\\{game.Id}.png\"/>\n" + 
+                $"ForegroundText = \"{foregroundTextStyle}\"\n" +
+                $"Square150x150Logo = \"{Constants.ICONFOLDERNAME}\\{game.Id}.png\"\n" + 
+                $"Square70x70Logo = \"{Constants.ICONFOLDERNAME}\\{game.Id}.png\"/>\n" + 
                 "</Application>";
-            bitmap.Save(Path.Combine(folderPath, "Icons", $"{game.Id}.png"), ImageFormat.Png);
             try
             {
                 using (var scriptFile = System.IO.File.CreateText(fullPath))
@@ -1077,21 +1107,39 @@ namespace ShortcutSync
                 }
                 return fullPath;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                logger.Error(ex, $"Could not create or write to launcher script \"{fullPath}\".");
             }
 
             return string.Empty;
         }
 
-        private System.Drawing.Color GetDominantColor(System.Drawing.Bitmap bitmap)
+        private float GetAverageBrightness(Bitmap bitmap)
+        {
+            float accumulator = 0F;
+            int count = 0;
+            for (int y = 0; y < bitmap.Height; ++y)
+                for (int x = 0; x < bitmap.Width; ++x)
+                {
+                    var pixelColor = bitmap.GetPixel(x, y);
+                    if (pixelColor.A > 0)
+                    {
+                        accumulator += pixelColor.GetBrightness();
+                        ++count;
+                    }
+                }
+            return count > 0 ? accumulator / count : 0f;
+        }
+
+        private Color GetDominantColor(Bitmap bitmap)
         {
             float r = 0f, g = 0f, b = 0f;
             for (int y = 0; y < bitmap.Height; ++y)
                 for (int x = 0; x < bitmap.Width; ++x)
                 {
                     var pixelColor = bitmap.GetPixel(x, y);
+                    
                     float alpha = pixelColor.A / 255.0f;
                     r += (alpha / 255.0f) * pixelColor.R;
                     g += (alpha / 255.0f) * pixelColor.G;
@@ -1106,6 +1154,127 @@ namespace ShortcutSync
             b = 255 * b / max;
             var color = System.Drawing.Color.FromArgb(255, (int)r, (int)g, (int)b);
             return color;
+        }
+
+        private Color GetDominantColorQuantized(Bitmap bitmap, int transparencyThreshold = 10)
+        {
+            Dictionary<int, int> colors = new Dictionary<int, int>();
+            for (int y = 0; y < bitmap.Height; ++y)
+                for (int x = 0; x < bitmap.Width; ++x)
+                {
+                    var pixelColor = bitmap.GetPixel(x, y);
+                    if (pixelColor.A > transparencyThreshold)
+                    {
+                        var closestColor = GetClosestColor(pixelColor).ToArgb();
+                        if (colors.TryGetValue(closestColor, out int count))
+                        {
+                            colors[closestColor] = count + 1;
+                        } else
+                        {
+                            colors.Add(closestColor, 1);
+                        }
+                    }
+                }
+            if (colors.Count > 0)
+            {
+                return Color.FromArgb(colors.Aggregate((l, r) => l.Value > r.Value ? l : r).Key);
+            }
+            else
+            {
+                return Color.Black;
+            }
+        }
+
+        private Color GetClosestColor(Color color)
+        {
+            float minDist = float.PositiveInfinity;
+            KnownColor closestColor = KnownColor.White;
+
+            float sqrDistance(Color a, Color b)
+            {
+                return (a.R - b.R) * (a.R - b.R) + (a.G - b.G) * (a.G - b.G) + (a.B - b.B) * (a.B - b.B);
+            }
+            foreach (KnownColor knownColor in Enum.GetValues(typeof(KnownColor)))
+            {
+                var dist = sqrDistance(Color.FromKnownColor(knownColor), color);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    closestColor = knownColor;
+                }
+            }
+            return Color.FromKnownColor(closestColor);
+        }
+
+        private string GetLauncherScriptPath(string shortcutPath)
+        {
+            return Path.Combine(shortcutPath, Constants.LAUNCHSCRIPTFOLDERNAME);
+        }
+
+        private string GetLauncherScriptIconsPath(string shortcutPath)
+        {
+            return Path.Combine(shortcutPath, Constants.LAUNCHSCRIPTFOLDERNAME, Constants.ICONFOLDERNAME);
+        }
+
+        public bool MoveShortcutPath(string oldPath, string newPath) {
+            try
+            {
+                if (Directory.Exists(oldPath))
+                {
+                    MergeMoveDirectory(oldPath, newPath, true);
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Could not move folder \"{oldPath}\" to \"{newPath}\".");
+                return false;
+            }
+        }
+
+        private bool CreateFolderStructure(string path)
+        {
+            try
+            {
+                Directory.CreateDirectory(path);
+                var launchScriptsFolder = Directory.CreateDirectory(GetLauncherScriptPath(path));
+                Directory.CreateDirectory(GetLauncherScriptIconsPath(path));
+                launchScriptsFolder.Attributes = FileAttributes.Directory | FileAttributes.Hidden;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, $"Could not create folder structure at \"{path}\".");
+                return false;
+            }
+        } 
+
+        private bool MergeMoveDirectory(string source, string target, bool overwrite = false)
+        {
+            if (Directory.Exists(target))
+            {
+                foreach(var dir in Directory.GetDirectories(source))
+                {
+                    MergeMoveDirectory(dir, Path.Combine(target, Path.GetFileName(dir)));
+                }
+                foreach(var file in Directory.GetFiles(source))
+                {
+                    var newFile = Path.Combine(target, Path.GetFileName(file));
+                    if (!System.IO.File.Exists(newFile))
+                    {
+                        System.IO.File.Move(file, newFile);
+                    } else if (overwrite)
+                    {
+                        System.IO.File.Delete(newFile);
+                        System.IO.File.Move(file, newFile);
+                    }
+                }
+                Directory.Delete(source, true);
+            } else
+            {
+                Directory.Move(source, target);
+            }
+            return true;
         }
     }
 }
