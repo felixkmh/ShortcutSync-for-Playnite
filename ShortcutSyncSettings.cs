@@ -11,6 +11,9 @@ namespace ShortcutSync
     {
         public delegate void OnPathChangedAction(string oldPath, string newPath);
         public event OnPathChangedAction OnPathChanged;
+
+        public delegate void OnSettingsChangedAction();
+        public event OnSettingsChangedAction OnSettingsChanged;
         private readonly ShortcutSync plugin;
 
         public string ShortcutPath { get; set; } =
@@ -21,6 +24,7 @@ namespace ShortcutSync
         public bool UpdateOnStartup { get; set; } = false;
         public bool ForceUpdate { get; set; } = false;
         public bool ExcludeHidden { get; set; } = false;
+        public bool SeperateFolders { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
 
 
@@ -50,6 +54,7 @@ namespace ShortcutSync
                 UpdateOnStartup = savedSettings.UpdateOnStartup;
                 UsePlayAction = savedSettings.UsePlayAction;
                 ExcludeHidden = savedSettings.ExcludeHidden;
+                SeperateFolders = savedSettings.SeperateFolders;
             }
         }
 
@@ -126,6 +131,7 @@ namespace ShortcutSync
             }
             // Code executed when user decides to confirm changes made since BeginEdit was called.
             plugin.SavePluginSettings(this);
+            OnSettingsChanged?.Invoke();
         }
 
         public bool VerifySettings(out List<string> errors)
