@@ -76,6 +76,7 @@ namespace ShortcutSync
                     "Update All Shortcuts",
                     () =>
                     {
+                        CreateFolderStructure(settings.ShortcutPath);
                         if (FolderIsAccessible(settings.ShortcutPath))
                         {
                             CreateFolderStructure(settings.ShortcutPath);
