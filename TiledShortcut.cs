@@ -296,7 +296,7 @@ namespace ShortcutSync
             string foregroundTextStyle = "light";
             string backgroundColorCode = "#000000";
             (var bgColor, var brightness) = CreateTileImage();
-            foregroundTextStyle = brightness > 0.5f ? "dark" : "light";
+            foregroundTextStyle = brightness > 0.4f ? "dark" : "light";
             backgroundColorCode = bgColor.ToHexCode();
             string script =
                 "<Application xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
@@ -468,15 +468,24 @@ namespace ShortcutSync
             float brightness = 0f;
             int almostBlack = 0;
             int almostWhite = 0;
+            int dark = 0;
+            int bright = 0;
             int numberOfSamples = 0;
             for (int y = (int)Math.Round(bitmap.Height * (2f/3f)); y < bitmap.Height; ++y)
                 for (int x = (int)Math.Round(bitmap.Width * (2f / 3f)); x < bitmap.Width; ++x)
                 {
                     var pixelColor = bitmap.GetPixel(x, y);
-                    var sample = bgBrightness * (1f - (pixelColor.A / 255f)) + pixelColor.GetBrightness() * (pixelColor.A / 255f);
+                    float alpha = pixelColor.A / 255f;
+                    float r = bgColor.R * (1f - alpha) + pixelColor.R * alpha;
+                    float g = bgColor.G * (1f - alpha) + pixelColor.G * alpha;
+                    float b = bgColor.B * (1f - alpha) + pixelColor.B * alpha;
+                    var sampleColor = Color.FromArgb(255, (int)Math.Round(r), (int)Math.Round(g), (int)Math.Round(b));
+                    var sample = sampleColor.GetBrightness();
                     brightness += sample;
                     almostBlack += sample <= 0.1 ? 1 : 0;
                     almostWhite += sample >= 0.9 ? 1 : 0;
+                    dark += sample < 0.35f ? 1 : 0;
+                    bright += sample > 0.65f ? 1 : 0;
                     ++numberOfSamples;
                 }
             brightness /= numberOfSamples;
@@ -491,7 +500,7 @@ namespace ShortcutSync
             {
                 brightness = 1;
             }
-            return Math.Max(0, Math.Min(1, brightness));
+            return Math.Max(0, Math.Min(1, (float)bright / (dark + bright)));
         }
 
         protected string GetGameIconPath()
