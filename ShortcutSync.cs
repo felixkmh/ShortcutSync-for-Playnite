@@ -134,6 +134,7 @@ namespace ShortcutSync
 
         public override void OnApplicationStarted()
         {
+            CreateFolderStructure(settings.ShortcutPath);
             UpdateShortcutDicts(settings.ShortcutPath);
             if (CreateFolderStructure(settings.ShortcutPath))
             {
