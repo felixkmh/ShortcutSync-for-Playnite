@@ -229,6 +229,7 @@ namespace ShortcutSync
             if (oldData.BackgroundImage != newData.BackgroundImage) return true;
             if (oldData.CoverImage      != newData.CoverImage)      return true;
             if (oldData.Name            != newData.Name)            return true;
+            if (oldData.Hidden          != newData.Hidden)          return true;
             return false;
         }
 
