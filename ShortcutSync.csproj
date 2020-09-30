@@ -39,9 +39,6 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ColorThief.Desktop.v46, Version=1.1.0.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\ksemenenko.ColorThief.1.1.1.4\lib\net46\ColorThief.Desktop.v46.dll</HintPath>
-    </Reference>
     <Reference Include="IconLib, Version=0.73.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\IconLib.Unofficial.0.73.0\lib\net20\IconLib.dll</HintPath>
     </Reference>
@@ -84,12 +81,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Constants.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="Shortcut.cs" />
     <Compile Include="ShortcutSync.cs" />
     <Compile Include="ShortcutSyncSettings.cs" />
     <Compile Include="ShortcutSyncSettingsView.xaml.cs">
       <DependentUpon>ShortcutSyncSettingsView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TiledShortcut.cs" />
+    <Compile Include="TiledShortcutsPlayAction.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="extension.yaml">
