@@ -33,6 +33,7 @@ namespace ShortcutSync
         private Dictionary<Guid, string> existingShortcuts { get; set; }
         private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; } = new Dictionary<string, IList<Guid>>();
         private Dictionary<Guid, Shortcut<Game>> Shortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
+        private ShortcutSyncSettings PreviousSettings { get; set; }
 
         public readonly Version version = new Version(1, 12);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
@@ -161,6 +162,7 @@ namespace ShortcutSync
             }
             settings.OnPathChanged += Settings_OnPathChanged;
             settings.OnSettingsChanged += Settings_OnSettingsChanged;
+            PreviousSettings = settings.GetClone();
         }
 
         private void Settings_OnSettingsChanged()
@@ -168,10 +170,19 @@ namespace ShortcutSync
             thread?.Join();
             thread = new Thread(() =>
             {
-                UpdateShortcutDicts(settings.ShortcutPath);
-                foreach (var shortcut in Shortcuts.Values) shortcut.Remove();
+                if (settings.ShortcutPath != PreviousSettings.ShortcutPath)
+                {
+                    UpdateShortcutDicts(PreviousSettings.ShortcutPath);
+                    foreach (var shortcut in Shortcuts.Values) shortcut.Remove();
+                }
+                if (settings.SeperateFolders != PreviousSettings.SeperateFolders)
+                {
+                    UpdateShortcutDicts(settings.ShortcutPath);
+                    foreach (var shortcut in Shortcuts.Values) shortcut.Remove();
+                }
                 UpdateShortcutDicts(settings.ShortcutPath);
                 UpdateShortcuts(PlayniteApi.Database.Games);
+                PreviousSettings = settings.GetClone();
             });
             thread.Start();
         }
@@ -230,6 +241,7 @@ namespace ShortcutSync
             if (oldData.CoverImage      != newData.CoverImage)      return true;
             if (oldData.Name            != newData.Name)            return true;
             if (oldData.Hidden          != newData.Hidden)          return true;
+            if (oldData.Source          != newData.Source)          return true;
             return false;
         }
 

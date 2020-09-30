@@ -296,7 +296,7 @@ namespace ShortcutSync
             string foregroundTextStyle = "light";
             string backgroundColorCode = "#000000";
             (var bgColor, var brightness) = CreateTileImage();
-            foregroundTextStyle = brightness > 0.4f ? "dark" : "light";
+            foregroundTextStyle = brightness > 0.5f ? "dark" : "light";
             backgroundColorCode = bgColor.ToHexCode();
             string script =
                 "<Application xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
@@ -369,6 +369,7 @@ namespace ShortcutSync
                     }
                     var tileIconPath = Path.Combine(TileIconFolder, $"{TargetObject.Id}.png");
                     resized.Save(tileIconPath, ImageFormat.Png);
+                    brightness = GetLowerThirdBrightness(resized, bgColor);
                     resized.Dispose();
                 } 
                 bitmap.Dispose();
@@ -450,15 +451,47 @@ namespace ShortcutSync
                     blue: Math.Max(0, (int)Math.Min(255, b))
                 );
             var brightnessFactor = 0;
-            if (Math.Abs(brightness) - Math.Abs(color.GetBrightness()) < 0.3)
-                brightnessFactor = brightness >= 0.5f ? -1 : 1;
+            if (Math.Abs(brightness) - Math.Abs(color.GetBrightness()) < 0.25)
+                brightnessFactor = brightness >= color.GetBrightness() ? -1 : 1;
             color = System.Drawing.Color.FromArgb(
                     alpha: 255,
-                    red: Math.Max(0, (int)Math.Min(255, color.R + brightnessFactor * 50)),
-                    green: Math.Max(0, (int)Math.Min(255, color.G + brightnessFactor * 50)),
-                    blue: Math.Max(0, (int)Math.Min(255, color.B + brightnessFactor * 50))
+                    red: Math.Max(0, (int)Math.Min(255, color.R + brightnessFactor * 90)),
+                    green: Math.Max(0, (int)Math.Min(255, color.G + brightnessFactor * 90)),
+                    blue: Math.Max(0, (int)Math.Min(255, color.B + brightnessFactor * 90))
                 );
             return color;
+        }
+
+        protected float GetLowerThirdBrightness(Bitmap bitmap, Color bgColor)
+        {
+            float bgBrightness = bgColor.GetBrightness();
+            float brightness = 0f;
+            int almostBlack = 0;
+            int almostWhite = 0;
+            int numberOfSamples = 0;
+            for (int y = (int)Math.Round(bitmap.Height * (2f/3f)); y < bitmap.Height; ++y)
+                for (int x = (int)Math.Round(bitmap.Width * (2f / 3f)); x < bitmap.Width; ++x)
+                {
+                    var pixelColor = bitmap.GetPixel(x, y);
+                    var sample = bgBrightness * (1f - (pixelColor.A / 255f)) + pixelColor.GetBrightness() * (pixelColor.A / 255f);
+                    brightness += sample;
+                    almostBlack += sample <= 0.1 ? 1 : 0;
+                    almostWhite += sample >= 0.9 ? 1 : 0;
+                    ++numberOfSamples;
+                }
+            brightness /= numberOfSamples;
+            if (almostWhite > 10 && almostBlack > 10)
+            {
+                brightness += 1.5f * almostWhite / numberOfSamples;
+                brightness -= 1.5f * almostBlack / numberOfSamples;
+            } else if (almostBlack >= almostWhite)
+            {
+                brightness = 0;
+            } else
+            {
+                brightness = 1;
+            }
+            return Math.Max(0, Math.Min(1, brightness));
         }
 
         protected string GetGameIconPath()
