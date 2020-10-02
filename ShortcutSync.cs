@@ -460,11 +460,14 @@ namespace ShortcutSync
                 {
                     foreach (var copyId in copyIds)
                     {
-                        var copy = PlayniteApi.Database.Games[copyId];
+                        var copy = PlayniteApi.Database.Games.Get(copyId);
                         if (copy != null && copyId != game.Id)
                         {
-                            Shortcuts[copyId].Name = Path.GetFileNameWithoutExtension(GetShortcutPath(copy, true, settings.SeparateFolders));
-                            hasDuplicates = true;
+                            if (Shortcuts.ContainsKey(copyId))
+                            {
+                                Shortcuts[copyId].Name = Path.GetFileNameWithoutExtension(GetShortcutPath(copy, true, settings.SeparateFolders));
+                                hasDuplicates = true;
+                            }
                         }
                     }
                     shortcutNameToGameId[game.Name.GetSafeFileName().ToLower()].AddMissing(game.Id);
@@ -512,7 +515,7 @@ namespace ShortcutSync
             }
             // Stopwatch stopwatch = new Stopwatch();
             // stopwatch.Start();
-            Parallel.ForEach(games, game => Shortcuts[game.Id]?.CreateOrUpdate());
+            Parallel.ForEach(games, game => { if (Shortcuts.ContainsKey(game.Id)) Shortcuts[game.Id].CreateOrUpdate(); });
             // stopwatch.Stop();
             // PlayniteApi.Dialogs.ShowMessage($"Created {Shortcuts.Count} shortcuts in {stopwatch.ElapsedMilliseconds / 1000f} seconds.");
             //foreach (var game in games)
