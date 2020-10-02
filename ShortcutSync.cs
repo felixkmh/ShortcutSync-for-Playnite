@@ -27,7 +27,7 @@ namespace ShortcutSync
         private Dictionary<Guid, Shortcut<Game>> Shortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
         private ShortcutSyncSettings PreviousSettings { get; set; }
 
-        public readonly Version version = new Version(1, 12);
+        public readonly Version version = new Version(1, 12, 1);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
         public enum UpdateStatus
