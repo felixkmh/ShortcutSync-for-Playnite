@@ -138,11 +138,6 @@ namespace ShortcutSync
             link.WriteToFile(ShortcutPath);
         }
 
-        protected void SaveLnk(IWshRuntimeLibrary.IWshShortcut lnk, string shortcutPath)
-        {
-
-        }
-
         public override bool Remove()
         {
 
@@ -239,30 +234,6 @@ namespace ShortcutSync
                 return true;
             }
             return false;
-        }
-
-        /// <summary>
-        /// Opens/Creates and returns a <see cref="IWshShortcut"/> at a 
-        /// given path.
-        /// </summary>
-        /// <param name="shortcutPath">Full path to the shortcut.</param>
-        /// <returns>The shortcut object.</returns>
-        public (IWshRuntimeLibrary.IWshShortcut lnk, string tmpPath) OpenLnk(string shortcutPath)
-        {
-
-
-            if (true)
-            {
-                try
-                {
-                    var tmp = Path.GetTempFileName() + ".lnk";
-                    var shell = new IWshRuntimeLibrary.WshShell();
-                    var shortcut = (IWshRuntimeLibrary.IWshShortcut)shell.CreateShortcut(tmp);
-                    return (shortcut, tmp);
-                }
-                catch (Exception) { }
-            }
-            return (null, null);
         }
 
         /// <summary>
