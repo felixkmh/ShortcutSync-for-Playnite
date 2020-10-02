@@ -31,19 +31,24 @@ namespace ShortcutSync
         {
             string fullPath = GetLauncherPath();
             string script = "";
-            
-            if (TargetObject.PlayAction.Type == GameActionType.URL)
+            if (TargetObject.Source != null && TargetObject.Source.Name == "Xbox")
             {
                 script =
                 "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
-                $"WshShell.Run {TargetPath}, 1";
+                $"WshShell.CurrentDirectory = \"Applications\"\n" +
+                $"WshShell.Run \"{@"C:Windows\explorer.exe"}\" & \" \" & \"{Arguments}\" , 1";
+            } else if (TargetObject.PlayAction.Type == GameActionType.URL)
+            {
+                script =
+                "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
+                $"WshShell.Run \"{TargetObject.PlayAction.Path}\", 1";
             }
             else
             {
                 script =
                 "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
                 $"WshShell.CurrentDirectory = \"{WorkingDir}\"\n" +
-                $"WshShell.Run {TargetObject} & \" \" & {Arguments} , 1";
+                $"WshShell.Run \"{TargetObject}\" & \" \" & \"{Arguments}\" , 1";
             }
 
           
