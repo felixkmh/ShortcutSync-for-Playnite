@@ -96,6 +96,7 @@ namespace ShortcutSync
             if (!Exists)
             {
                 CreateFolderStructure();
+                CreateShortcutIcon();
                 CreateTileImage();
                 CreateVbsLauncher();
                 CreateVisualElementsManifest();
@@ -165,6 +166,7 @@ namespace ShortcutSync
                 if (IsOutdated || forceUpdate)
                 {
                     // RenameShortcut(TargetObject.Name.GetSafeFileName());
+                    CreateShortcutIcon();
                     CreateTileImage();
                     CreateLnk();
                     return true;
@@ -544,9 +546,12 @@ namespace ShortcutSync
 
                         MultiIcon mIcon = new MultiIcon();
                         SingleIcon sIcon = mIcon.Add("Original");
-                        sIcon.CreateFrom(resized, IconOutputFormat.FromWinXP);
+                        sIcon.CreateFrom(resized, IconOutputFormat.FromWin95);
                         mIcon.SelectedIndex = 0;
                         mIcon.Save(GetShortcutIconPath(), MultiIconFormat.ICO);
+#if DEBUG
+                        if (File.Exists(GetGameIconPath())) throw new Exception($"{GetShortcutIconPath()} was not created!");
+#endif
                         return true;
 
                     }
