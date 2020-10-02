@@ -19,7 +19,7 @@ namespace ShortcutSync
         public abstract bool IsValid { get; }
         public abstract bool IsOutdated { get; }
 
-        public abstract bool Move(string path);
+        public abstract bool Move(params string[] paths);
         public abstract bool Create();
         public abstract bool Remove();
         public abstract bool Update(bool forceUpdate = false);

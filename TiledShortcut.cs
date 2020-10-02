@@ -59,7 +59,8 @@ namespace ShortcutSync
             }
             set {
                 if (!value.IsNullOrEmpty())
-                    RenameShortcut(value);
+                    if (Path.GetFileNameWithoutExtension(ShortcutPath) != value)
+                        RenameShortcut(value);
             }  
         }
 
@@ -125,7 +126,16 @@ namespace ShortcutSync
 
         protected void CreateLnk()
         {
-            var lnk = OpenLnk(ShortcutPath);
+            var link = ShellLink.Shortcut.CreateShortcut(GetLauncherPath());
+            link.IconIndex = 0;
+            link.StringData = new ShellLink.Structures.StringData(true) { 
+                IconLocation = GetShortcutIconPath(), 
+                NameString = "Launch " + TargetObject.Name + " on " + GetSourceName(TargetObject) + " via Playnite." + $" [{TargetObject.Id}]" 
+            };
+            link.StringData.NameString = "Launch " + TargetObject.Name + " on " + GetSourceName(TargetObject) + " via Playnite." + $" [{TargetObject.Id}]";
+            link.WriteToFile(ShortcutPath);
+            /*
+            var (lnk, path) = OpenLnk(ShortcutPath);
             if (CreateShortcutIcon())
             {
                 lnk.IconLocation = GetShortcutIconPath();
@@ -135,14 +145,33 @@ namespace ShortcutSync
             lnk.Description = "Launch " + TargetObject.Name + " on " + GetSourceName(TargetObject) + " via Playnite." + $" [{TargetObject.Id}]";
             lnk.WorkingDirectory = "";
             lnk.Save();
+            if (File.Exists(ShortcutPath)) File.Delete(ShortcutPath);
+            File.Move(path, ShortcutPath);
+            */
+        }
+
+        protected void SaveLnk(IWshRuntimeLibrary.IWshShortcut lnk, string shortcutPath)
+        {
+
         }
 
         public override bool Remove()
         {
-            SafeDelete(ShortcutPath);
-            SafeDelete(GetLauncherPath());
-            SafeDelete(GetManifestPath());
-            SafeDelete(GetTileIconPath());
+            
+            bool shortcutDeleted = SafeDelete(ShortcutPath);
+            bool launcherScriptDeleted = SafeDelete(GetLauncherPath());
+            bool manifestDeleted = SafeDelete(GetManifestPath());
+            bool iconDeleted = SafeDelete(GetTileIconPath());
+
+            if (iconDeleted && Directory.GetFileSystemEntries(TileIconFolder).Length == 0)
+                Directory.Delete(TileIconFolder);
+
+            if (launcherScriptDeleted && manifestDeleted && Directory.GetFileSystemEntries(LaunchScriptFolder).Length == 0)
+                Directory.Delete(LaunchScriptFolder);
+
+            if (shortcutDeleted && Directory.GetFileSystemEntries(Path.GetDirectoryName(ShortcutPath)).Length == 0)
+                Directory.Delete(Path.GetDirectoryName(ShortcutPath));
+
             return true;
         }
 
@@ -230,21 +259,23 @@ namespace ShortcutSync
         /// </summary>
         /// <param name="shortcutPath">Full path to the shortcut.</param>
         /// <returns>The shortcut object.</returns>
-        public IWshRuntimeLibrary.IWshShortcut OpenLnk(string shortcutPath)
+        public (IWshRuntimeLibrary.IWshShortcut lnk, string tmpPath) OpenLnk(string shortcutPath)
         {
+            
+
             if (true)
             {
                 try
                 {
+                    var tmp = Path.GetTempFileName() + ".lnk";
                     var shell = new IWshRuntimeLibrary.WshShell();
-                    var shortcut = (IWshRuntimeLibrary.IWshShortcut)shell.CreateShortcut(shortcutPath);
-                    return shortcut;
+                    var shortcut = (IWshRuntimeLibrary.IWshShortcut)shell.CreateShortcut(tmp);
+                    return (shortcut, tmp);
                 }
-                catch (Exception){}
+                catch (Exception) { }
             }
-            return null;
+            return (null, null);
         }
-
 
         /// <summary>
         /// Safely gets a name of the source for a game.
@@ -563,9 +594,115 @@ namespace ShortcutSync
             return false;
         }
 
-        public override bool Move(string path)
+        
+        public override bool Move(params string[] paths)
         {
-            throw new NotImplementedException();
+            if (paths.Length != 3)
+            {
+                throw new ArgumentException("TiledShortcut.Move needs three paths: shortcutPath, tileIconPath and launchScriptPath.", nameof(paths));
+            }
+
+            if (!Exists) return false;
+
+            string newShortcutPath     = paths[0];
+            string newTileIconPath     = paths[1];
+            string newLaunchScriptPath = paths[2];
+
+            var newShortcutPathType     = newShortcutPath.GetPathType();
+            var newTileIconPathType     = newTileIconPath.GetPathType();
+            var newLaunchScriptPathType = newLaunchScriptPath.GetPathType();
+
+            if (newShortcutPathType == Extensions.PathType.Invalid)       
+                throw new ArgumentException($"{newShortcutPath} is not a valid path.", nameof(newShortcutPath));
+            if (newTileIconPathType != Extensions.PathType.Directory)     
+                throw new ArgumentException($"{newTileIconPath} is not a valid directory.", nameof(newTileIconPath));
+            if (newLaunchScriptPathType != Extensions.PathType.Directory) 
+                throw new ArgumentException($"{newLaunchScriptPath} is not a valid directory.", nameof(newLaunchScriptPath));
+
+            if (!TargetObject.Icon.IsNullOrEmpty())
+                if (MoveFileToFileOrDirectory(Path.Combine(TileIconFolder, TargetObject.Id + ".png"), Path.Combine(newTileIconPath, TargetObject.Id + ".png")))
+                {
+                    if (Directory.GetFileSystemEntries(TileIconFolder).Length == 0)
+                        Directory.Delete(TileIconFolder);
+                    TileIconFolder = newTileIconPath;
+                }
+                else
+                {
+                    return false;
+                }
+
+            if (MoveFileToFileOrDirectory(Path.Combine(LaunchScriptFolder, TargetObject.Id + ".vbs"), Path.Combine(newLaunchScriptPath, TargetObject.Id + ".vbs")))
+            {
+                 if (Directory.GetFileSystemEntries(LaunchScriptFolder).Length == 0)
+                    Directory.Delete(LaunchScriptFolder);
+                LaunchScriptFolder = newLaunchScriptPath;
+            }
+            else
+            {
+                return false;
+            }
+
+            if (MoveFileToFileOrDirectory(Path.Combine(
+                    LaunchScriptFolder, TargetObject.Id + ".visualelementsmanifest.xml"), 
+                    Path.Combine(newLaunchScriptPath, TargetObject.Id + ".visualelementsmanifest.xml")
+               ))
+            {
+                if (Directory.GetFileSystemEntries(LaunchScriptFolder).Length == 0)
+                    Directory.Delete(LaunchScriptFolder);
+                LaunchScriptFolder = newLaunchScriptPath;
+            }
+            else
+            {
+                return false;
+            }
+
+            if (MoveFileToFileOrDirectory(ShortcutPath, newShortcutPath))
+            {
+                if (Directory.GetFileSystemEntries(Path.GetDirectoryName(ShortcutPath)).Length == 0)
+                    Directory.Delete(Path.GetDirectoryName(ShortcutPath));
+                if (newShortcutPathType == Extensions.PathType.File)
+                {
+                    ShortcutPath = newShortcutPath;
+                }
+                else
+                {
+                    ShortcutPath = Path.Combine(newShortcutPath, Path.GetFileName(ShortcutPath));
+                }
+            }
+            else
+            {
+                return false;
+            }
+
+
+            return true;
+        }
+
+        protected bool MoveFileToFileOrDirectory(string source, string target, bool overwrite = false)
+        {
+            if (source == target) return true;
+            var sourceType = source.GetPathType();
+            var targetType = source.GetPathType();
+
+            string newPath = target;
+            if (targetType == Extensions.PathType.Directory)
+                newPath = Path.Combine(target, Path.GetFileName(source));
+
+            if (sourceType != Extensions.PathType.File) return false;
+            if (!File.Exists(source))                   return false;
+
+            if (File.Exists(newPath))
+            {
+                if (overwrite)
+                    File.Delete(target);
+                else
+                    return false;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(newPath));
+            File.Move(source, newPath);
+
+            return true;
         }
     }
 }
