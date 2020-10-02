@@ -59,6 +59,12 @@
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="securifybv.PropertyStore, Version=0.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\securifybv.PropertyStore.0.1.0\lib\netstandard2.0\securifybv.PropertyStore.dll</HintPath>
+    </Reference>
+    <Reference Include="securifybv.ShellLink, Version=0.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\securifybv.ShellLink.0.1.0\lib\netstandard2.0\securifybv.ShellLink.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data.DataSetExtensions" />
