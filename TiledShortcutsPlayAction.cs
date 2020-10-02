@@ -29,8 +29,7 @@ namespace ShortcutSync
             {
                 script =
                 "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
-                $"WshShell.CurrentDirectory = \"Applications\"\n" +
-                $"WshShell.Run \"{@"C:Windows\explorer.exe"}\" & \" \" & \"{Arguments}\" , 1";
+                $"WshShell.Run \"{@"explorer.exe"}\" & \" \" & \"{Arguments}\" , 1";
             }
             else if (TargetObject.PlayAction.Type == GameActionType.URL)
             {
