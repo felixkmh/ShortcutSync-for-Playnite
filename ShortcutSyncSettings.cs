@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
-using System.Windows.Documents;
 
 namespace ShortcutSync
 {
@@ -47,7 +46,7 @@ namespace ShortcutSync
             {
                 InstalledOnly = savedSettings.InstalledOnly;
                 ForceUpdate = savedSettings.ForceUpdate;
-                if (savedSettings.ShortcutPath != null) 
+                if (savedSettings.ShortcutPath != null)
                     ShortcutPath = savedSettings.ShortcutPath;
                 if (savedSettings.SourceOptions != null)
                     SourceOptions = savedSettings.SourceOptions;
@@ -61,11 +60,13 @@ namespace ShortcutSync
         public void BeginEdit()
         {
             plugin.settingsView.UpdateTextBlock.Visibility = System.Windows.Visibility.Collapsed;
-            plugin.UpdateAvailable().ContinueWith((task) => {
+            plugin.UpdateAvailable().ContinueWith((task) =>
+            {
                 var updateAvailable = task.Result.Available;
                 var url = task.Result.Url;
                 var latestVersion = task.Result.LatestVersion;
-                plugin.settingsView.Dispatcher.Invoke(() => {
+                plugin.settingsView.Dispatcher.Invoke(() =>
+                {
                     if (updateAvailable)
                     {
                         plugin.settingsView.UpdateTextBlock.Visibility = System.Windows.Visibility.Visible;

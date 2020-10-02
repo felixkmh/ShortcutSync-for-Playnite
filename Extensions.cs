@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ShortcutSync
 {
@@ -18,8 +16,8 @@ namespace ShortcutSync
 
         public static string ToHexCode(this Color color, bool includeAlpha = false)
         {
-            return $"#{color.R:X2}{color.G:X2}{color.B:X2}" 
-                + (includeAlpha?color.A.ToString("X2"):string.Empty);
+            return $"#{color.R:X2}{color.G:X2}{color.B:X2}"
+                + (includeAlpha ? color.A.ToString("X2") : string.Empty);
         }
 
         public static bool AddMissing<Key, Value>(this IDictionary<Key, Value> dict, Key key, Value value)
@@ -27,7 +25,8 @@ namespace ShortcutSync
             if (dict.ContainsKey(key))
             {
                 return false;
-            } else
+            }
+            else
             {
                 dict.Add(key, value);
                 return true;

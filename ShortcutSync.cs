@@ -1,26 +1,18 @@
 ﻿using IWshRuntimeLibrary;
-using Playnite.Common;
+using Microsoft.CSharp;
+using Octokit;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using System;
-using System.Collections.Concurrent;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Controls;
-using Octokit;
-using System.CodeDom.Compiler;
-using System.Diagnostics;
-using Microsoft.CSharp;
-using System.Text;
-using System.Drawing;
-using System.Security.AccessControl;
-using System.Windows.Forms;
-using System.Drawing.IconLib;
 
 namespace ShortcutSync
 {
@@ -98,7 +90,7 @@ namespace ShortcutSync
                     () =>
                     {
                         CreateShortcuts(PlayniteApi.MainView.SelectedGames);
-                        
+
                     }),
                 new ExtensionFunction(
                     "Delete TiledShortcut for selected Games",
@@ -156,10 +148,11 @@ namespace ShortcutSync
                     {
                         PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
                     }
-                } 
+                }
                 PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
                 PlayniteApi.Database.Games.ItemCollectionChanged += Games_ItemCollectionChanged;
-            } else
+            }
+            else
             {
                 logger.Error("Could not create directory \"{settings.ShortcutPath}\". Try choosing another folder.");
             }
@@ -246,14 +239,15 @@ namespace ShortcutSync
             }
         }
 
-        private static bool SignificantChanges(Game oldData, Game newData) {
-            if (oldData.Id              != newData.Id)              return true;
-            if (oldData.Icon            != newData.Icon)            return true;
+        private static bool SignificantChanges(Game oldData, Game newData)
+        {
+            if (oldData.Id != newData.Id) return true;
+            if (oldData.Icon != newData.Icon) return true;
             if (oldData.BackgroundImage != newData.BackgroundImage) return true;
-            if (oldData.CoverImage      != newData.CoverImage)      return true;
-            if (oldData.Name            != newData.Name)            return true;
-            if (oldData.Hidden          != newData.Hidden)          return true;
-            if (oldData.Source          != newData.Source)          return true;
+            if (oldData.CoverImage != newData.CoverImage) return true;
+            if (oldData.Name != newData.Name) return true;
+            if (oldData.Hidden != newData.Hidden) return true;
+            if (oldData.Source != newData.Source) return true;
             return false;
         }
 
@@ -280,35 +274,36 @@ namespace ShortcutSync
 
         public Task<UpdateAvailableResult> UpdateAvailable()
         {
-            return Task.Run(() => {
-            var github = new GitHubClient(new ProductHeaderValue("ShortcutSync-for-Playnite"));
-            var remaining = github.GetLastApiInfo()?.RateLimit.Remaining;
-            if (remaining == null)
+            return Task.Run(() =>
             {
-                try
+                var github = new GitHubClient(new ProductHeaderValue("ShortcutSync-for-Playnite"));
+                var remaining = github.GetLastApiInfo()?.RateLimit.Remaining;
+                if (remaining == null)
                 {
-                    remaining = github.Miscellaneous.GetRateLimits().Result.Rate.Remaining;
-                }
-                catch (Exception)
-                {
-                    remaining = 0;
-                }
-            }
-            if (remaining > 0)
-            {
-                try
-                {
-                    var release = github.Repository.Release.GetLatest("felixkmh", "ShortcutSync-for-Playnite").Result;
-                    if (Version.TryParse(release.TagName.Replace("v",""), out Version latestVersion))
+                    try
                     {
-                        if (latestVersion > version)
-                        {
-                            logger.Info($"New version of ShortcutSync available. Current {version}, latest {latestVersion}");
-                            return new UpdateAvailableResult(true, latestVersion, release.HtmlUrl);
-                        }
+                        remaining = github.Miscellaneous.GetRateLimits().Result.Rate.Remaining;
                     }
-                    logger.Debug($"Latest version: {release.TagName} parsed: {latestVersion}");
+                    catch (Exception)
+                    {
+                        remaining = 0;
+                    }
                 }
+                if (remaining > 0)
+                {
+                    try
+                    {
+                        var release = github.Repository.Release.GetLatest("felixkmh", "ShortcutSync-for-Playnite").Result;
+                        if (Version.TryParse(release.TagName.Replace("v", ""), out Version latestVersion))
+                        {
+                            if (latestVersion > version)
+                            {
+                                logger.Info($"New version of ShortcutSync available. Current {version}, latest {latestVersion}");
+                                return new UpdateAvailableResult(true, latestVersion, release.HtmlUrl);
+                            }
+                        }
+                        logger.Debug($"Latest version: {release.TagName} parsed: {latestVersion}");
+                    }
 #pragma warning disable CS0168 // Variable ist deklariert, wird jedoch niemals verwendet
                     catch (Exception ex)
 #pragma warning restore CS0168 // Variable ist deklariert, wird jedoch niemals verwendet
@@ -316,80 +311,11 @@ namespace ShortcutSync
 #if DEBUG
                 logger.Debug(ex, "Could not retrieve latest release.");
 #endif
+                    }
                 }
-            }
-            return new UpdateAvailableResult(false, default, default);
+                return new UpdateAvailableResult(false, default, default);
             });
         }
-
-        /// <summary>
-        /// Update, create or remove a shortcut to a game.
-        /// </summary>
-        /// <param name="game">Game the shortcut should point to.</param>
-        /// <param name="forceUpdate">If true, existing shortcut will be overwritten.</param>
-        /// <param name="multiple">Specifies whether source name should be included in the shortcut
-        /// name to prevent conflicts if multiple games have the same shortcut name.</param>
-        /// <returns>Status of the associated shortcut.</returns>
-        public UpdateStatus UpdateShortcut(Game game, bool forceUpdate, bool multiple = false, bool removed = false)
-        {
-            UpdateStatus status = UpdateStatus.None;
-            // determine whether to create/update the shortcut or to delete it
-            bool shortcutExists = existingShortcuts.TryGetValue(game.Id, out string currentPath);
-            string desiredPath = GetShortcutPath(game, multiple);
-            bool keepShortcut = ShouldKeepShortcut(game) && !removed;
-            // Keep/Update shortcut
-            if (keepShortcut)
-            {
-                bool willCreateShortcut = !shortcutExists || forceUpdate;
-                if (willCreateShortcut)
-                {
-                    // Assign status accordingly
-                    if (shortcutExists)
-                    {
-                        status = UpdateStatus.Updated;
-                        if (desiredPath != currentPath)
-                        {
-                            try
-                            {
-                                System.IO.File.Move(currentPath, desiredPath);
-                            }
-                            catch (Exception ex)
-                            {
-                                logger.Error(ex, $"Could not move \"{currentPath}\" to \"{desiredPath}\".");
-                                return UpdateStatus.Error;
-                            }
-                        }
-                    } else
-                    {
-                        status = UpdateStatus.Created;
-                    }
-                    CreateShortcut(game, desiredPath);
-                    existingShortcuts[game.Id] = desiredPath;
-                    string safeGameName = GetSafeFileName(game.Name).ToLower();
-                    if (!shortcutNameToGameId.ContainsKey(safeGameName))
-                    {
-                        shortcutNameToGameId[safeGameName] = new List<Guid>();
-                    }
-                    shortcutNameToGameId[safeGameName].AddMissing(game.Id);
-                }
-
-            }
-            // Remove shortcut
-            else
-            {
-                if (RemoveShortcut(game))
-                {
-                    status = UpdateStatus.Deleted;
-                    existingShortcuts.Remove(game.Id);
-                    if (shortcutNameToGameId.TryGetValue(GetSafeFileName(game.Name).ToLower(), out var games))
-                    {
-                        games.Remove(game.Id);
-                    }
-                }
-            }
-            return status;
-        }
-
 
         /// <summary>
         /// Checks whether a game's shortcut will be kept when updated
@@ -410,144 +336,6 @@ namespace ShortcutSync
             return keepShortcut;
         }
 
-        /// <summary>
-        /// Create shortcut for a game at a given location.
-        /// </summary>
-        /// <param name="game">Game the shortcut should launch.</param>
-        /// <param name="shortcutPath">Full path to the shortcut location.</param>
-        public void CreateShortcut(Game game, string shortcutPath)
-        {
-            string icon = string.Empty;
-
-            if (!string.IsNullOrEmpty(game.Icon))
-            {
-                icon = PlayniteApi.Database.GetFullFilePath(game.Icon);
-            }
-
-            if (System.IO.File.Exists(icon))
-            {
-                if (Path.GetExtension(icon).ToLower() != ".ico")
-                {
-                    // Check if icon has already been converted before
-                    var iconFiles = new string[0];
-                    try
-                    {
-                        iconFiles = System.IO.Directory.GetFiles(PlayniteApi.Database.GetFileStoragePath(game.Id), "*.ico");
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex, $"Could not open folder {PlayniteApi.Database.GetFileStoragePath(game.Id)} to look for existing .ico files.");
-                    }
-                    if (iconFiles.Length > 0)
-                    {
-                        icon = iconFiles[0];
-                    } 
-                    else if (ConvertToIcon(icon, out string output))
-                    {
-                        icon = output;
-                    }
-                }
-            }
-            // If no icon was found, use a fallback icon.
-            else 
-            {
-                icon = Path.Combine(PlayniteApi.Paths.ApplicationPath, "Playnite.DesktopApp.exe");
-            }
-            // Creat playnite URI if game is not installed
-            // or if Use PlayAction option is disabled
-            if (true || !game.IsInstalled || !settings.UsePlayAction || GetSourceName(game) == Constants.UNDEFINEDSOURCE)
-            {
-                CreateVbsLauncher(game, GetLauncherScriptPath(settings.ShortcutPath));
-                CreateVisualElementsManifest(game, GetLauncherScriptPath(settings.ShortcutPath));
-                CreateLnkURLToVbs(shortcutPath, icon, game);
-            } 
-            else 
-            {
-                if (GetSourceName(game) == "Xbox")
-                {
-                    CreateLnkFileXbox(shortcutPath, icon, game);
-                }
-                else
-                {
-                    if (game.PlayAction.Type == GameActionType.URL)
-                    {
-                        CreateLnkURLDirect(shortcutPath, icon, game);
-                    }
-                    else
-                    {
-                        CreateLnkFile(shortcutPath, icon, game);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Converts an image into an icon in the same folder as the 
-        /// source image naming it with its MD5 hash.
-        /// Mostly taken from the ConvertToIcon implementation
-        /// in Playnite.Common
-        /// </summary>
-        /// <param name="icon">Full path to the source image.</param>
-        /// <param name="output">Full path to the output file on success.</param>
-        /// <returns>Whether conversion succeded.</returns>
-        public static bool ConvertToIcon(string icon, out string output)
-        {
-            output = string.Empty;
-            string tempIcon;
-            // Try to create temp file to write the icon to
-            try
-            {
-                tempIcon = Path.GetTempFileName();
-            }
-            catch (IOException ex)
-            {
-                logger.Error(ex, "Could not create temporary file.");
-                // LogError("Could not create temporary file. Exception: " + ex.Message);
-                return false;
-            }
-            bool success = false;
-            try
-            {
-                success = BitmapExtensions.ConvertToIcon(icon, tempIcon);
-            }
-            catch (Exception ex)
-            {
-                logger.Debug(ex, $"Could not convert icon {icon}.");
-                throw ex;
-            }
-            if (success)
-            {
-                var md5 = Playnite.Common.FileSystem.GetMD5(tempIcon);
-                var newPath = Path.Combine(Path.GetDirectoryName(icon), md5 + ".ico");
-                // Move new icon into image folder, possibly overwriting previous icon
-                // if it was the same icon or was converted before
-                try
-                {
-                    if (System.IO.File.Exists(newPath))
-                    {
-                        System.IO.File.Delete(tempIcon);
-                    }
-                    else
-                    {
-                        System.IO.File.Move(tempIcon, newPath);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex, $"Could not move converted icon to \"{newPath}\".");
-                    // LogError($"Could not move converted icon to \"{newPath}\". Exception: {ex.Message}");
-                }
-                output = newPath;
-            }
-            else
-            {
-                logger.Error($"Could not convert file \"{icon}\" to ico.");
-                // LogError($"Could not convert file \"{icon}\" to ico.");
-                return false;
-            }
-
-            return true;
-        }
 
         /// <summary>
         /// Creates the shortcut path based on the 
@@ -566,7 +354,8 @@ namespace ShortcutSync
             if (seperateFolders)
             {
                 path = Path.Combine(settings.ShortcutPath, GetSourceName(game));
-            } else
+            }
+            else
             {
                 path = Path.Combine(settings.ShortcutPath);
             }
@@ -574,41 +363,14 @@ namespace ShortcutSync
             if (includeSourceName && !seperateFolders)
             {
                 path = Path.Combine(path, validName + " (" + GetSourceName(game) + ")" + extension);
-            } else
+            }
+            else
             {
                 path = Path.Combine(path, validName + extension);
             }
             return path;
         }
 
-        /// <summary>
-        /// Tries to remove the shortcut for a given game
-        /// if it exists.
-        /// </summary>
-        /// <param name="game">The game the shortcut points to.</param>
-        private bool RemoveShortcut(Game game)
-        {
-            if (existingShortcuts.TryGetValue(game.Id, out string path))
-            {
-                if (System.IO.File.Exists(path))
-                {
-                    try
-                    {
-                        System.IO.File.Delete(path);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex, $"Could not delete shortcut at \"{path}\".");
-                        return false;
-                    }
-                    return true;
-                } else
-                {
-                    return false;
-                }
-            }
-            return false;
-        }
 
         /// <summary>
         /// Removes characters that are not valid in 
@@ -622,100 +384,6 @@ namespace ShortcutSync
             return validName;
         }
 
-        /// <summary>
-        /// Calls update shortcuts on all games in a seperate thread. 
-        /// Depending on the settings it removes 
-        /// deleted games.
-        /// </summary>
-        /// <param name="gamesToUpdate">Games to update.</param>
-        public void UpdateShortcuts_Alt(IEnumerable<Game> gamesToUpdate, bool forceUpdate = false, bool removed = false)
-        {
-            bool errorOccured = false;
-            {
-                {
-                    foreach (var game in gamesToUpdate)
-                    {
-                        string path = GetShortcutPath(game: game, includeSourceName: false);
-                        string safeGameName = GetSafeFileName(game.Name);
-
-                        List<Game> existing = new List<Game>();
-                        if (shortcutNameToGameId.ContainsKey(safeGameName.ToLower()))
-                        {
-                            existing.AddRange(
-                                from gameId 
-                                in shortcutNameToGameId[safeGameName.ToLower()] 
-                                where gameId != game.Id 
-                                select PlayniteApi.Database.Games.Get(gameId));
-                        }
-                        if (ShouldKeepShortcut(game) && !removed)
-                        {
-                            foreach (var copy in existing)
-                            {
-                                string newPath = GetShortcutPath(game: copy, includeSourceName: true);
-                                if (existingShortcuts.TryGetValue(copy.Id, out string currentPath))
-                                {
-                                    if (System.IO.Path.GetFileName(currentPath).ToLower() != System.IO.Path.GetFileName(newPath).ToLower())
-                                    {
-                                        try
-                                        {
-                                            System.IO.File.Move(currentPath, newPath);
-                                            existingShortcuts[copy.Id] = newPath;
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name}.");
-                                        }
-                                    }
-                                }
-                            }
-                            if (UpdateShortcut(game, forceUpdate, existing.Count > 0, removed) == UpdateStatus.Error)
-                            {
-                                errorOccured = true;
-                            }
-                        } else if (existing.Count == 1)
-                        {
-                            if (UpdateShortcut(game, forceUpdate, false, removed) == UpdateStatus.Error)
-                            {
-                                errorOccured = true;
-                            }
-                            string newPath = GetShortcutPath(game: existing[0], includeSourceName: false);
-                            string currentPath = existingShortcuts[existing[0].Id];
-                            if (System.IO.Path.GetFileName(currentPath).ToLower() != System.IO.Path.GetFileName(newPath).ToLower())
-                            {
-                                if (!System.IO.File.Exists(newPath))
-                                {
-                                    try
-                                    {
-                                        System.IO.File.Move(currentPath, newPath);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        logger.Error(ex, $"Could not move {currentPath} to {newPath}, while updating {game.Name}.");
-                                    }
-                                    existingShortcuts[existing[0].Id] = newPath;
-                                }
-                            }
-                        } else
-                        {
-                            if (UpdateShortcut(game, forceUpdate, false, removed) == UpdateStatus.Error)
-                            {
-                                errorOccured = true;
-                            }
-                        }
-                      
-                    }
-                    if (errorOccured)
-                    {
-                        // Refresh dictionaries to properly reflect current state.
-                        // (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
-                        UpdateShortcutDicts(settings.ShortcutPath);
-                    }
-
-                }
-
-            }
-
-        }
 
         /// <summary>
         /// Checks whether a game entry changes because it
@@ -725,124 +393,11 @@ namespace ShortcutSync
         /// <returns></returns>
         private static bool WasLaunchedOrClosed(ItemUpdateEvent<Game> data)
         {
-            return ( data.NewData.IsRunning && !data.OldData.IsRunning) || ( data.NewData.IsLaunching && !data.OldData.IsLaunching) ||
-                   (!data.NewData.IsRunning &&  data.OldData.IsRunning) || (!data.NewData.IsLaunching &&  data.OldData.IsLaunching);
+            return (data.NewData.IsRunning && !data.OldData.IsRunning) || (data.NewData.IsLaunching && !data.OldData.IsLaunching) ||
+                   (!data.NewData.IsRunning && data.OldData.IsRunning) || (!data.NewData.IsLaunching && data.OldData.IsLaunching);
         }
 
-        /// <summary>
-        /// Creates a .lnk shortcut given a game with a File PlayAction.
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="iconPath"></param>
-        /// <param name="game"></param>
-        public void CreateLnkFile(string path, string iconPath, Game game)
-        {
-            string workingDirectory = PlayniteApi.ExpandGameVariables(game, game.PlayAction.WorkingDir);
-            string targetPath = PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path);
-            if (!string.IsNullOrEmpty(workingDirectory))
-            {
-                targetPath = Path.Combine(workingDirectory, targetPath);
-            }
-            CreateLnk(
-                shortcutPath: path,
-                targetPath: targetPath,
-                iconPath: iconPath,
-                description: "Launch " + game.Name + " on " + GetSourceName(game) + "." + $" [{game.Id}]",
-                workingDirectory: workingDirectory,
-                arguments: game.PlayAction.Arguments);
-        }
 
-        /// <summary>
-        /// Creates a .lnk shortcut given a game with a File PlayAction.
-        /// Specialized for Windows UWP apps.
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="iconPath"></param>
-        /// <param name="game"></param>
-        public void CreateLnkFileXbox(string path, string iconPath, Game game)
-        {
-            string targetPath = PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path);
-            CreateLnk(
-                shortcutPath: path,
-                targetPath: @"C:Windows\explorer.exe",
-                iconPath: iconPath,
-                description: "Launch " + game.Name + " on " + GetSourceName(game) + "." + $" [{game.Id}]",
-                workingDirectory: "Applications",
-                arguments: game.PlayAction.Arguments);
-        }
-        /// <summary>
-        /// Creates a .lnk shortcut launching a game using a playnite:// url.
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="iconPath"></param>
-        /// <param name="game"></param>
-        public void CreateLnkURL(string path, string iconPath, Game game)
-        {
-            CreateLnk(
-                shortcutPath: path,
-                targetPath: $"playnite://playnite/start/{game.Id}",
-                iconPath: iconPath,
-                description: "Launch " + game.Name + " on " + GetSourceName(game) + " via Playnite." + $" [{game.Id}]");
-        }
-
-        public void CreateLnkURLToVbs(string path, string iconPath, Game game)
-        {
-            CreateLnk(
-                shortcutPath: path,
-                targetPath: $"{GetLauncherScriptPath(settings.ShortcutPath)}\\{game.Id}.vbs",
-                iconPath: iconPath,
-                description: "Launch " + game.Name + " on " + GetSourceName(game) + " via Playnite." + $" [{game.Id}]");
-        }
-        /// <summary>
-        /// Creates a .lnk shortcut given a game with a URL PlayAction.
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="iconPath"></param>
-        /// <param name="game"></param>
-        public void CreateLnkURLDirect(string path, string iconPath, Game game)
-        {
-            CreateLnk(
-                shortcutPath: path,
-                targetPath: game.PlayAction.Path,
-                iconPath: iconPath,
-                description: "Launch " + game.Name + " on " + GetSourceName(game) + "." + $" [{game.Id}]");
-        }
-
-        /// <summary>
-        /// Create a lnk format shortcut.
-        /// </summary>
-        /// <param name="shortcutPath">Full path and filename of the shortcut file.</param>
-        /// <param name="targetPath">Full target path of the shortcut.</param>
-        /// <param name="iconPath">Full path to the icon for the shortcut.</param>
-        /// <param name="description">Description of the shortcut.</param>
-        /// <param name="workingDirectory">Optional path to the working directory.</param>
-        /// <param name="arguments">Optional launch argurments.</param>
-        public void CreateLnk(
-            string shortcutPath, string targetPath, string iconPath, 
-            string description, string workingDirectory = "", string arguments = "")
-        {
-            try
-            {
-                var shell = new WshShell();
-                var shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
-                if (shortcut != null)
-                {
-                    shortcut.IconLocation = iconPath;
-                    shortcut.TargetPath = targetPath;
-                    shortcut.Description = description;
-                    shortcut.WorkingDirectory = workingDirectory;
-                    shortcut.Arguments = arguments;
-                    shortcut.Save();
-                } else
-                {
-                    logger.Error($"Could not create shortcut at \"{shortcutPath}\".");
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Could not create shortcut at \"{shortcutPath}\".");
-            }
-        }
 
         /// <summary>
         /// Looks for a <see cref="Guid"/> inside []-brackets inside a string.
@@ -868,101 +423,19 @@ namespace ShortcutSync
             if (startId != -1 && endId != -1)
             {
                 return Guid.TryParse(description.Substring(startId, endId - startId + 1), out gameId);
-            } else
+            }
+            else
             {
                 gameId = default;
                 return false;
             }
         }
 
-        /// <summary>
-        /// Searches a folder for existing shortcuts by reading
-        /// their description and looking for a <see cref="Guid"/> inside []-brackets
-        /// and creates dictionaries holding the results.
-        /// </summary>
-        /// <param name="folderPath">Full path to the folder to check for shortcuts.</param>
-        /// <param name="shortcutName">Pattern to look for that is prepended to "*.lnk" to look for files.</param>
-        /// <returns>A dictionary that assigns each found gameId to the full shortcut path
-        /// and a dictionary assigning file names in lower case to a list of gameIds 
-        /// that would create a shortcut with that name.</returns>
-        private (Dictionary<Guid, string> guidToShortcut, Dictionary<string, IList<Guid>> nameToGuid)
-            GetExistingShortcuts(string folderPath, string shortcutName = "")
-        {
-            var games = new Dictionary<Guid, string>();
-            var nameToId = new Dictionary<string, IList<Guid>>();
-            string[] files = new string[0];
-            try
-            {
-                files = Directory.GetFiles(folderPath, shortcutName + "*.lnk");
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Could not open folder at {folderPath}. Can not update which shortcuts already exist.");
-            }
-            foreach(var file in files)
-            {
-                var shortcut = OpenLnk(file);
-                if (shortcut == null)
-                {
-                    // skip if shortcut could not be opened
-                    logger.Warn($"Could not open shortcut at \"{file}\". Could be corrupted or file access might be restricted.");
-                    continue;
-                }
-                if (ExtractIdFromLnkDescription(shortcut.StringData.NameString, out Guid gameId))
-                {
-                    Game game = PlayniteApi.Database.Games.Get(gameId);
-                    if (game == null)
-                    {
-                        logger.Warn($"Shortcut at \"{file}\" conatins Guid \"{gameId}\", but this Id is not contained in the game database. Will be deleted.");
-                        try
-                        {
-                            System.IO.File.Delete(file);
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.Error(ex, $"Could not remove shortcut at \"{file}\".");
-                        }
-                    }
-                    else if (games.ContainsKey(game.Id))
-                    {
-                        logger.Warn($"Shortcut at \"{file}\" is a duplicate for {game.Name} with gameId {game.Id}. Will be deleted.");
-                        try
-                        {
-                            System.IO.File.Delete(file);
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.Error(ex, $"Could not remove shortcut at \"{file}\".");
-                        }
-                    } else
-                    {
-                        games.Add(game.Id, file);
-                        string safeGameName = GetSafeFileName(game.Name).ToLower();
-                        if (!nameToId.ContainsKey(safeGameName))
-                        {
-                            nameToId.Add(safeGameName, new List<Guid>());
-                        }
-                        nameToId[safeGameName].Add(gameId);
-                    }
-
-                } else
-                {
-                    // Delete invalid shortcut
-                    // System.IO.File.Delete(file);
-                    logger.Warn(
-                        $"Shortcut at {file} is not a valid shortcut created by ShortcutSync and" +
-                        $" may cause it not to function as intended. If possible, " +
-                        $"delete it or move it to another location.");
-                }
-            }
-            return (games, nameToId);
-        }
-
         public void UpdateShortcuts(IEnumerable<Game> games, bool forceUpdate = false)
         {
             CreateShortcuts(from game in games where ShouldKeepShortcut(game) select game);
             RemoveShortcuts(from game in games where !ShouldKeepShortcut(game) select game);
-            if (forceUpdate) foreach(var game in games) if (Shortcuts.ContainsKey(game.Id)) Shortcuts[game.Id].Update(true); 
+            if (forceUpdate) foreach (var game in games) if (Shortcuts.ContainsKey(game.Id)) Shortcuts[game.Id].Update(true);
         }
 
         public void CreateShortcuts(IEnumerable<Game> games)
@@ -1003,7 +476,8 @@ namespace ShortcutSync
                 if (Shortcuts.TryGetValue(game.Id, out Shortcut<Game> existing))
                 {
                     existing.Name = Path.GetFileNameWithoutExtension(GetShortcutPath(game, hasDuplicates, settings.SeparateFolders));
-                } else
+                }
+                else
                 {
                     if (settings.UsePlayAction && game.PlayAction != null)
                     {
@@ -1015,13 +489,14 @@ namespace ShortcutSync
                                 targetGame: game,
                                 shortcutPath: GetShortcutPath(game, hasDuplicates, settings.SeparateFolders),
                                 launchScriptFolder: GetLauncherScriptPath(settings.ShortcutPath),
-                                tileIconFolder: GetLauncherScriptIconsPath(settings.ShortcutPath), 
-                                workingDirectory, 
-                                targetPath, 
+                                tileIconFolder: GetLauncherScriptIconsPath(settings.ShortcutPath),
+                                workingDirectory,
+                                targetPath,
                                 game.PlayAction.Arguments
                             )
                         );
-                    } else
+                    }
+                    else
                     {
                         Shortcuts.Add(game.Id,
                             new TiledShortcut
@@ -1042,7 +517,7 @@ namespace ShortcutSync
             // PlayniteApi.Dialogs.ShowMessage($"Created {Shortcuts.Count} shortcuts in {stopwatch.ElapsedMilliseconds / 1000f} seconds.");
             //foreach (var game in games)
             {
-              //  Shortcuts[game.Id].CreateOrUpdate();
+                //  Shortcuts[game.Id].CreateOrUpdate();
             }
         }
 
@@ -1210,7 +685,8 @@ namespace ShortcutSync
             if (game.Source == null)
             {
                 return Constants.UNDEFINEDSOURCE;
-            } else
+            }
+            else
             {
                 return game.Source.Name;
             }
@@ -1237,7 +713,7 @@ namespace ShortcutSync
             };
             parameters.ReferencedAssemblies.Add("System.dll");
             parameters.ReferencedAssemblies.Add("System.Diagnostics.Process.dll");
-            var results = codeProvider.CompileAssemblyFromSource(parameters, 
+            var results = codeProvider.CompileAssemblyFromSource(parameters,
                 "using System;\n" +
                 "using System.Diagnostics;\n" +
                 "namespace ShortcutLauncher{\n" +
@@ -1267,271 +743,14 @@ namespace ShortcutSync
                 }
                 logger.Error($"Could not compile launcher for {game.Name}. Errors:\n" + errors);
                 return false;
-            } else
+            }
+            else
             {
                 logger.Debug($"Succesfully compiled launcher for {game.Name}");
                 return true;
             }
         }
 
-        private string CreateVbsLauncher(Game game, string folderPath)
-        {
-            string fileName = $"{game.Id}.vbs";
-            string fullPath = Path.Combine(folderPath, fileName);
-            string script = 
-                "Dim prefix, id\n" +
-
-                "prefix = \"playnite://playnite/start/\"\n" +
-                $"id = \"{game.Id}\"\n" +
-
-                "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
-                "WshShell.Run prefix &id, 1";
-            try
-            {
-                using (var scriptFile = System.IO.File.CreateText(fullPath))
-                {
-                    scriptFile.Write(script);
-                }
-                return fullPath;
-            }
-            catch (Exception)
-            {
-
-            }
-            
-            return string.Empty;
-        }
-
-        private bool CreateLauncherShortcut(Game game, string shortcutFolderPath, string launcherFolderPath)
-        {
-            CreateLnk(
-                shortcutPath: Path.Combine(shortcutFolderPath, game.Name + ".lnk"),
-                targetPath: Path.Combine(launcherFolderPath, game.GameId + ".vbs"),
-                iconPath: "",
-                description: ""
-                );
-            return true;
-        }
-
-        private string CreateVisualElementsManifest(Game game, string folderPath)
-        {
-#if DEBUG
-            logger.Debug($"Creating xml for {game.Name}.");
-#endif
-            string fileName = $"{game.Id}.visualelementsmanifest.xml";
-            string fullPath = Path.Combine(folderPath, fileName);
-            string foregroundTextStyle = "light";
-            string backgroundColorCode = "#000000";
-            if (   !Path.GetFileName(game.Icon).IsNullOrEmpty()
-                && System.IO.File.Exists(GetIconPath(game)))
-            {
-                string iconPath = GetIconPath(game);
-                Bitmap bitmap = null;
-                if (Path.GetExtension(game.Icon).ToLower() == ".ico")
-                {
-                    using (var stream = System.IO.File.OpenRead(iconPath))
-                    {
-                        var i = new System.Drawing.IconLib.MultiIcon();
-                        i.Load(stream);
-                        int maxIndex = 0;
-                        int maxWidth = 0;
-                        int index = 0;
-                        foreach(var imag in i[0])
-                        {
-                            if (imag.Size.Width >= 150 && imag.Size.Height >= 150)
-                            {
-                                // logger.Info($"Icon size: {imag.Size} for {game.Name}.");
-                                bitmap = imag.Icon.ToBitmap();
-                                break;
-                            }
-                            if (imag.Size.Width > maxWidth)
-                            {
-                                maxIndex = index;
-                                maxWidth = imag.Size.Width;
-                                bitmap = imag.Icon.ToBitmap();
-                            }
-                            ++index;
-                        }
-                        
-
-                        using (var icon = new Icon(iconPath, 1000, 1000))
-                        {
-                            // logger.Info($"Icon size: {icon.Size} for {game.Name}.");
-                            // bitmap = icon.ToBitmap();
-                        }
-                    }
-                } else
-                {
-                    bitmap = new Bitmap(iconPath);
-                }
-                if (bitmap != null && bitmap.Width > 0 && bitmap.Height > 0)
-                {
-                    var brightness = GetAverageBrightness(bitmap);
-                    foregroundTextStyle = brightness > 0.4f ? "dark" : "light";
-                    // var colorThief = new ColorThiefDotNet.ColorThief();
-                    // backgroundColorCode = colorThief.GetColor(bitmap, 10, false).Color.ToHexString();
-                    var bgColor = GetDominantColor(bitmap, brightness);
-                    backgroundColorCode = $"#{bgColor.R:X2}{bgColor.G:X2}{bgColor.B:X2}";
-
-                    // resize
-                    int newWidth = 150;
-                    int newHeight = 150;
-                    if (bitmap.Width >= bitmap.Height)
-                    {
-                        float scale = (float)newHeight / bitmap.Height;
-                        newWidth = (int)Math.Round(bitmap.Width * scale);
-                    } else
-                    {
-                        float scale = (float)newWidth / bitmap.Width;
-                        newHeight = (int)Math.Round(bitmap.Height * scale);
-                    }
-                    Bitmap resized = new Bitmap(newWidth, newHeight);
-                    using (Graphics graphics = Graphics.FromImage(resized))
-                    {
-                        if (bitmap.Width <= 64 && bitmap.Height <= 64)
-                        {
-                            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                            graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-                        }
-                        graphics.DrawImage(bitmap, 0, 0, newWidth, newHeight);
-                    }
-
-                    resized.Save(Path.Combine(folderPath, Constants.ICONFOLDERNAME, $"{game.Id}.png"), ImageFormat.Png);
-                    resized.Dispose();
-                }
-                bitmap.Dispose();
-            }
-
-            string script =
-                "<Application xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" + 
-                "<VisualElements\n" + 
-                $"BackgroundColor = \"{backgroundColorCode}\"\n" + 
-                "ShowNameOnSquare150x150Logo = \"on\"\n" + 
-                $"ForegroundText = \"{foregroundTextStyle}\"\n" +
-                $"Square150x150Logo = \"{Constants.ICONFOLDERNAME}\\{game.Id}.png\"\n" + 
-                $"Square70x70Logo = \"{Constants.ICONFOLDERNAME}\\{game.Id}.png\"/>\n" + 
-                "</Application>";
-            try
-            {
-                using (var scriptFile = System.IO.File.CreateText(fullPath))
-                {
-                    scriptFile.Write(script);
-                }
-                return fullPath;
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Could not create or write to launcher script \"{fullPath}\".");
-            }
-
-            return string.Empty;
-        }
-
-        private float GetAverageBrightness(Bitmap bitmap)
-        {
-            float accumulator = 0F;
-            int count = 0;
-            for (int y = 0; y < bitmap.Height; ++y)
-                for (int x = 0; x < bitmap.Width; ++x)
-                {
-                    var pixelColor = bitmap.GetPixel(x, y);
-                    if (pixelColor.A > 0)
-                    {
-                        accumulator += pixelColor.GetBrightness();
-                        ++count;
-                    }
-                }
-            return count > 0 ? accumulator / count : 0f;
-        }
-
-        private Color GetDominantColor(Bitmap bitmap, float brightness = 0.5f)
-        {
-            float r = 0f, g = 0f, b = 0f;
-            for (int y = 0; y < bitmap.Height; ++y)
-                for (int x = 0; x < bitmap.Width; ++x)
-                {
-                    var pixelColor = bitmap.GetPixel(x, y);
-                    
-                    float alpha = pixelColor.A / 255.0f;
-                    r += (alpha / 255.0f) * pixelColor.R;
-                    g += (alpha / 255.0f) * pixelColor.G;
-                    b += (alpha / 255.0f) * pixelColor.B;
-                }
-            r *= r;
-            g *= g;
-            b *= b;
-            var max = Math.Max(r, Math.Max(g, b));
-            max = max <= 0.00001 ? 1 : max;
-            r = 255 * r / max;
-            g = 255 * g / max;
-            b = 255 * b / max;
-            var color = System.Drawing.Color.FromArgb(
-                    alpha: 255, 
-                    red:   Math.Max(0, (int)Math.Min(255, r)), 
-                    green: Math.Max(0, (int)Math.Min(255, g)), 
-                    blue:  Math.Max(0, (int)Math.Min(255, b))
-                );
-            var brightnessFactor = 0;
-            if (Math.Abs(brightness) - Math.Abs(color.GetBrightness()) < 0.3)
-                brightnessFactor = brightness >= 0.5f ? -1 : 1;
-            color = System.Drawing.Color.FromArgb(
-                    alpha: 255,
-                    red: Math.Max(0, (int)Math.Min(255, color.R + brightnessFactor * 50)),
-                    green: Math.Max(0, (int)Math.Min(255, color.G + brightnessFactor * 50)),
-                    blue: Math.Max(0, (int)Math.Min(255, color.B + brightnessFactor * 50))
-                );
-            return color;
-        }
-
-        private Color GetDominantColorQuantized(Bitmap bitmap, int transparencyThreshold = 10)
-        {
-            Dictionary<int, int> colors = new Dictionary<int, int>();
-            for (int y = 0; y < bitmap.Height; ++y)
-                for (int x = 0; x < bitmap.Width; ++x)
-                {
-                    var pixelColor = bitmap.GetPixel(x, y);
-                    if (pixelColor.A > transparencyThreshold)
-                    {
-                        var closestColor = GetClosestColor(pixelColor).ToArgb();
-                        if (colors.TryGetValue(closestColor, out int count))
-                        {
-                            colors[closestColor] = count + 1;
-                        } else
-                        {
-                            colors.Add(closestColor, 1);
-                        }
-                    }
-                }
-            if (colors.Count > 0)
-            {
-                return Color.FromArgb(colors.Aggregate((l, r) => l.Value > r.Value ? l : r).Key);
-            }
-            else
-            {
-                return Color.Black;
-            }
-        }
-
-        private Color GetClosestColor(Color color)
-        {
-            float minDist = float.PositiveInfinity;
-            KnownColor closestColor = KnownColor.White;
-
-            float sqrDistance(Color a, Color b)
-            {
-                return (a.R - b.R) * (a.R - b.R) + (a.G - b.G) * (a.G - b.G) + (a.B - b.B) * (a.B - b.B);
-            }
-            foreach (KnownColor knownColor in Enum.GetValues(typeof(KnownColor)))
-            {
-                var dist = sqrDistance(Color.FromKnownColor(knownColor), color);
-                if (dist < minDist)
-                {
-                    minDist = dist;
-                    closestColor = knownColor;
-                }
-            }
-            return Color.FromKnownColor(closestColor);
-        }
 
         private string GetLauncherScriptPath(string shortcutPath)
         {
@@ -1541,22 +760,6 @@ namespace ShortcutSync
         private string GetLauncherScriptIconsPath(string shortcutPath)
         {
             return Path.Combine(shortcutPath, Constants.LAUNCHSCRIPTFOLDERNAME, Constants.ICONFOLDERNAME);
-        }
-
-        public bool MoveShortcutPath(string oldPath, string newPath) {
-            try
-            {
-                if (Directory.Exists(oldPath))
-                {
-                    MergeMoveDirectory(oldPath, newPath, true);
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Could not move folder \"{oldPath}\" to \"{newPath}\".");
-                return false;
-            }
         }
 
         private bool CreateFolderStructure(string path)
@@ -1574,30 +777,32 @@ namespace ShortcutSync
                 logger.Error(ex, $"Could not create folder structure at \"{path}\".");
                 return false;
             }
-        } 
+        }
 
         private bool MergeMoveDirectory(string source, string target, bool overwrite = false)
         {
             if (Directory.Exists(target))
             {
-                foreach(var dir in Directory.GetDirectories(source))
+                foreach (var dir in Directory.GetDirectories(source))
                 {
                     MergeMoveDirectory(dir, Path.Combine(target, Path.GetFileName(dir)));
                 }
-                foreach(var file in Directory.GetFiles(source))
+                foreach (var file in Directory.GetFiles(source))
                 {
                     var newFile = Path.Combine(target, Path.GetFileName(file));
                     if (!System.IO.File.Exists(newFile))
                     {
                         System.IO.File.Move(file, newFile);
-                    } else if (overwrite)
+                    }
+                    else if (overwrite)
                     {
                         System.IO.File.Delete(newFile);
                         System.IO.File.Move(file, newFile);
                     }
                 }
                 Directory.Delete(source, true);
-            } else
+            }
+            else
             {
                 Directory.Move(source, target);
             }

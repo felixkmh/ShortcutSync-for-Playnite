@@ -1,14 +1,10 @@
 ﻿using Playnite.SDK.Models;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.IconLib;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
-using System.Drawing.IconLib;
 
 namespace ShortcutSync
 {
@@ -16,8 +12,8 @@ namespace ShortcutSync
     {
         public static string FileDatabasePath { get; set; } = null;
 
-        public string LaunchScriptFolder    { get; protected set; } = null;
-        public string TileIconFolder        { get; protected set; } = null;
+        public string LaunchScriptFolder { get; protected set; } = null;
+        public string TileIconFolder { get; protected set; } = null;
 
         public TiledShortcut(Game targetGame, string shortcutPath, string launchScriptFolder, string tileIconFolder)
         {
@@ -27,7 +23,8 @@ namespace ShortcutSync
             ShortcutPath = shortcutPath;
         }
 
-        public override bool Exists { 
+        public override bool Exists
+        {
             get
             {
                 bool shortcutExists = !ShortcutPath.IsNullOrEmpty() && File.Exists(ShortcutPath);
@@ -38,8 +35,9 @@ namespace ShortcutSync
             }
         }
 
-        public override DateTime LastUpdated {
-            get 
+        public override DateTime LastUpdated
+        {
+            get
             {
                 if (File.Exists(ShortcutPath))
                 {
@@ -47,21 +45,24 @@ namespace ShortcutSync
                 }
                 return DateTime.MinValue;
             }
-            protected set 
-            { 
-                throw new FieldAccessException("Not allowed to set LastUpdated property."); 
-            } 
+            protected set
+            {
+                throw new FieldAccessException("Not allowed to set LastUpdated property.");
+            }
         }
 
-        public override string Name { 
-            get {
-                return Path.GetFileNameWithoutExtension(ShortcutPath);            
+        public override string Name
+        {
+            get
+            {
+                return Path.GetFileNameWithoutExtension(ShortcutPath);
             }
-            set {
+            set
+            {
                 if (!value.IsNullOrEmpty())
                     if (Path.GetFileNameWithoutExtension(ShortcutPath) != value)
                         RenameShortcut(value);
-            }  
+            }
         }
 
         public override bool IsOutdated
@@ -84,7 +85,7 @@ namespace ShortcutSync
                 string newShortcutPath = Path.Combine(Path.GetDirectoryName(ShortcutPath), newName + ".lnk");
                 if (Exists && ShortcutPath != newShortcutPath)
                 {
-                        File.Move(ShortcutPath, newShortcutPath);
+                    File.Move(ShortcutPath, newShortcutPath);
                 }
                 ShortcutPath = newShortcutPath;
             }
@@ -128,26 +129,13 @@ namespace ShortcutSync
         {
             var link = ShellLink.Shortcut.CreateShortcut(GetLauncherPath());
             link.IconIndex = 0;
-            link.StringData = new ShellLink.Structures.StringData(true) { 
-                IconLocation = GetShortcutIconPath(), 
-                NameString = "Launch " + TargetObject.Name + " on " + GetSourceName(TargetObject) + " via Playnite." + $" [{TargetObject.Id}]" 
+            link.StringData = new ShellLink.Structures.StringData(true)
+            {
+                IconLocation = GetShortcutIconPath(),
+                NameString = "Launch " + TargetObject.Name + " on " + GetSourceName(TargetObject) + " via Playnite." + $" [{TargetObject.Id}]"
             };
             link.StringData.NameString = "Launch " + TargetObject.Name + " on " + GetSourceName(TargetObject) + " via Playnite." + $" [{TargetObject.Id}]";
             link.WriteToFile(ShortcutPath);
-            /*
-            var (lnk, path) = OpenLnk(ShortcutPath);
-            if (CreateShortcutIcon())
-            {
-                lnk.IconLocation = GetShortcutIconPath();
-            }
-            // TODO: Get right icon path
-            lnk.TargetPath = GetLauncherPath();
-            lnk.Description = "Launch " + TargetObject.Name + " on " + GetSourceName(TargetObject) + " via Playnite." + $" [{TargetObject.Id}]";
-            lnk.WorkingDirectory = "";
-            lnk.Save();
-            if (File.Exists(ShortcutPath)) File.Delete(ShortcutPath);
-            File.Move(path, ShortcutPath);
-            */
         }
 
         protected void SaveLnk(IWshRuntimeLibrary.IWshShortcut lnk, string shortcutPath)
@@ -157,7 +145,7 @@ namespace ShortcutSync
 
         public override bool Remove()
         {
-            
+
             bool shortcutDeleted = SafeDelete(ShortcutPath);
             bool launcherScriptDeleted = SafeDelete(GetLauncherPath());
             bool manifestDeleted = SafeDelete(GetManifestPath());
@@ -212,7 +200,7 @@ namespace ShortcutSync
                     && ShortcutIconIsValid;
             }
         }
-        
+
         protected string GetManifestName()
         {
             return $"{TargetObject.Id}.visualelementsmanifest.xml";
@@ -261,7 +249,7 @@ namespace ShortcutSync
         /// <returns>The shortcut object.</returns>
         public (IWshRuntimeLibrary.IWshShortcut lnk, string tmpPath) OpenLnk(string shortcutPath)
         {
-            
+
 
             if (true)
             {
@@ -351,7 +339,7 @@ namespace ShortcutSync
             return string.Empty;
         }
 
-        
+
         protected (Color bgColor, float brightness) CreateTileImage()
         {
             string iconPath = GetGameIconPath();
@@ -372,7 +360,7 @@ namespace ShortcutSync
                 if (bitmap != null && bitmap.Width > 0 && bitmap.Height > 0)
                 {
                     brightness = GetAverageBrightness(bitmap);
-                    
+
                     bgColor = GetDominantColor(bitmap, brightness);
 
                     // resize
@@ -402,9 +390,9 @@ namespace ShortcutSync
                     resized.Save(tileIconPath, ImageFormat.Png);
                     brightness = GetLowerThirdBrightness(resized, bgColor);
                     resized.Dispose();
-                } 
+                }
                 bitmap.Dispose();
-            } 
+            }
             return (bgColor, brightness);
         }
 
@@ -502,7 +490,7 @@ namespace ShortcutSync
             int dark = 0;
             int bright = 0;
             int numberOfSamples = 0;
-            for (int y = (int)Math.Round(bitmap.Height * (2f/3f)); y < bitmap.Height; ++y)
+            for (int y = (int)Math.Round(bitmap.Height * (2f / 3f)); y < bitmap.Height; ++y)
                 for (int x = (int)Math.Round(bitmap.Width * (2f / 3f)); x < bitmap.Width; ++x)
                 {
                     var pixelColor = bitmap.GetPixel(x, y);
@@ -524,10 +512,12 @@ namespace ShortcutSync
             {
                 brightness += 1.5f * almostWhite / numberOfSamples;
                 brightness -= 1.5f * almostBlack / numberOfSamples;
-            } else if (almostBlack >= almostWhite)
+            }
+            else if (almostBlack >= almostWhite)
             {
                 brightness = 0;
-            } else
+            }
+            else
             {
                 brightness = 1;
             }
@@ -536,8 +526,8 @@ namespace ShortcutSync
 
         protected string GetGameIconPath()
         {
-            return TargetObject.Icon.IsNullOrEmpty() 
-                ? string.Empty 
+            return TargetObject.Icon.IsNullOrEmpty()
+                ? string.Empty
                 : Path.Combine(FileDatabasePath, TargetObject.Id.ToString(), Path.GetFileName(TargetObject.Icon));
         }
 
@@ -594,7 +584,7 @@ namespace ShortcutSync
             return false;
         }
 
-        
+
         public override bool Move(params string[] paths)
         {
             if (paths.Length != 3)
@@ -604,19 +594,19 @@ namespace ShortcutSync
 
             if (!Exists) return false;
 
-            string newShortcutPath     = paths[0];
-            string newTileIconPath     = paths[1];
+            string newShortcutPath = paths[0];
+            string newTileIconPath = paths[1];
             string newLaunchScriptPath = paths[2];
 
-            var newShortcutPathType     = newShortcutPath.GetPathType();
-            var newTileIconPathType     = newTileIconPath.GetPathType();
+            var newShortcutPathType = newShortcutPath.GetPathType();
+            var newTileIconPathType = newTileIconPath.GetPathType();
             var newLaunchScriptPathType = newLaunchScriptPath.GetPathType();
 
-            if (newShortcutPathType == Extensions.PathType.Invalid)       
+            if (newShortcutPathType == Extensions.PathType.Invalid)
                 throw new ArgumentException($"{newShortcutPath} is not a valid path.", nameof(newShortcutPath));
-            if (newTileIconPathType != Extensions.PathType.Directory)     
+            if (newTileIconPathType != Extensions.PathType.Directory)
                 throw new ArgumentException($"{newTileIconPath} is not a valid directory.", nameof(newTileIconPath));
-            if (newLaunchScriptPathType != Extensions.PathType.Directory) 
+            if (newLaunchScriptPathType != Extensions.PathType.Directory)
                 throw new ArgumentException($"{newLaunchScriptPath} is not a valid directory.", nameof(newLaunchScriptPath));
 
             if (!TargetObject.Icon.IsNullOrEmpty())
@@ -633,7 +623,7 @@ namespace ShortcutSync
 
             if (MoveFileToFileOrDirectory(Path.Combine(LaunchScriptFolder, TargetObject.Id + ".vbs"), Path.Combine(newLaunchScriptPath, TargetObject.Id + ".vbs")))
             {
-                 if (Directory.GetFileSystemEntries(LaunchScriptFolder).Length == 0)
+                if (Directory.GetFileSystemEntries(LaunchScriptFolder).Length == 0)
                     Directory.Delete(LaunchScriptFolder);
                 LaunchScriptFolder = newLaunchScriptPath;
             }
@@ -643,7 +633,7 @@ namespace ShortcutSync
             }
 
             if (MoveFileToFileOrDirectory(Path.Combine(
-                    LaunchScriptFolder, TargetObject.Id + ".visualelementsmanifest.xml"), 
+                    LaunchScriptFolder, TargetObject.Id + ".visualelementsmanifest.xml"),
                     Path.Combine(newLaunchScriptPath, TargetObject.Id + ".visualelementsmanifest.xml")
                ))
             {
@@ -689,7 +679,7 @@ namespace ShortcutSync
                 newPath = Path.Combine(target, Path.GetFileName(source));
 
             if (sourceType != Extensions.PathType.File) return false;
-            if (!File.Exists(source))                   return false;
+            if (!File.Exists(source)) return false;
 
             if (File.Exists(newPath))
             {

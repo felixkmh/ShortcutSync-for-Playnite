@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-using Playnite.SDK.Models;
+﻿using Playnite.SDK.Models;
+using System;
 
 namespace ShortcutSync
 {
@@ -17,7 +11,7 @@ namespace ShortcutSync
 
         public TiledShortcutsPlayAction(Game targetGame, string shortcutPath, string launchScriptFolder, string tileIconFolder)
             : base(targetGame, shortcutPath, launchScriptFolder, tileIconFolder)
-        {}
+        { }
 
         public TiledShortcutsPlayAction(Game targetGame, string shortcutPath, string launchScriptFolder, string tileIconFolder, string workinkDir, string targetPath, string arguments)
             : base(targetGame, shortcutPath, launchScriptFolder, tileIconFolder)
@@ -37,7 +31,8 @@ namespace ShortcutSync
                 "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
                 $"WshShell.CurrentDirectory = \"Applications\"\n" +
                 $"WshShell.Run \"{@"C:Windows\explorer.exe"}\" & \" \" & \"{Arguments}\" , 1";
-            } else if (TargetObject.PlayAction.Type == GameActionType.URL)
+            }
+            else if (TargetObject.PlayAction.Type == GameActionType.URL)
             {
                 script =
                 "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
@@ -51,7 +46,7 @@ namespace ShortcutSync
                 $"WshShell.Run \"{TargetObject}\" & \" \" & \"{Arguments}\" , 1";
             }
 
-          
+
             try
             {
                 using (var scriptFile = System.IO.File.CreateText(fullPath))

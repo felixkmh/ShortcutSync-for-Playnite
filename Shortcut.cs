@@ -1,17 +1,13 @@
-﻿using Octokit;
-using Playnite.SDK.Models;
-using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 
 namespace ShortcutSync
 {
     public abstract class Shortcut<T>
     {
-        internal Shortcut() {}
+        internal Shortcut() { }
 
         public T TargetObject { get; protected set; }
-        public string ShortcutPath { get; protected set;  }
+        public string ShortcutPath { get; protected set; }
 
         public abstract DateTime LastUpdated { get; protected set; }
         public abstract bool Exists { get; }
