@@ -23,8 +23,8 @@
             <CheckBox Content="Update on Startup" MinWidth="150" IsChecked="{Binding UpdateOnStartup}" HorizontalAlignment="Left"/>
             <CheckBox Content="Use PlayAction" MinWidth="150" IsChecked="{Binding UsePlayAction}" HorizontalAlignment="Left"/>
             <CheckBox Content="Exclude Hidden" MinWidth="150" IsChecked="{Binding ExcludeHidden}" HorizontalAlignment="Left"/>
-                <CheckBox Content="Use Seperate Folder For Each Source" MinWidth="150" IsChecked="{Binding SeperateFolders}" HorizontalAlignment="Left"/>
-            </StackPanel>
+            <CheckBox Content="Use Separate Folder For Each Source" MinWidth="150" IsChecked="{Binding SeparateFolders}" HorizontalAlignment="Left"/>
+        </StackPanel>
 
         <Label Content="Sources shortcuts are created for:"/>
         <StackPanel x:Name="SourceSettingsStack" HorizontalAlignment="Left" Margin="0,5" VerticalAlignment="Top"/>

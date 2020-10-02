@@ -24,7 +24,7 @@ namespace ShortcutSync
         public bool UpdateOnStartup { get; set; } = false;
         public bool ForceUpdate { get; set; } = false;
         public bool ExcludeHidden { get; set; } = false;
-        public bool SeperateFolders { get; set; } = false;
+        public bool SeparateFolders { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
 
 
@@ -54,7 +54,7 @@ namespace ShortcutSync
                 UpdateOnStartup = savedSettings.UpdateOnStartup;
                 UsePlayAction = savedSettings.UsePlayAction;
                 ExcludeHidden = savedSettings.ExcludeHidden;
-                SeperateFolders = savedSettings.SeperateFolders;
+                SeparateFolders = savedSettings.SeparateFolders;
             }
         }
 
