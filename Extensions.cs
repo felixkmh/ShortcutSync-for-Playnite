@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace ShortcutSync
 {
@@ -45,6 +46,43 @@ namespace ShortcutSync
             if (!path.IsValidPath()) return PathType.Invalid;
             if (Path.HasExtension(path) && Path.GetFileNameWithoutExtension(path) != string.Empty) return PathType.File;
             return PathType.Directory;
+        }
+
+        public static T Copy<T>(this T instance) where T : new()
+        {
+            var type = instance.GetType();
+            T copy = new T();
+            foreach(var field in type.GetFields())
+            {
+                object fieldCopy;
+                if (field.FieldType.IsByRef)
+                {
+                    fieldCopy = field.GetValue(instance).Copy();
+                } else
+                {
+                    fieldCopy = field.GetValue(instance);
+                }
+                field.SetValue(copy, fieldCopy);
+            }
+            foreach (var prop in type.GetProperties())
+            {
+                object propertyCopy;
+                if (prop.PropertyType.IsByRef)
+                {
+                    propertyCopy = prop.GetValue(instance).Copy();
+                }
+                else
+                {
+                    propertyCopy = prop.GetValue(instance);
+                }
+                prop.SetValue(copy, propertyCopy);
+            }
+            return copy;
+        }
+
+        public static bool IsNullOrEmpty(this string str)
+        {
+            return str == null ? true : str == string.Empty;
         }
     }
 }
