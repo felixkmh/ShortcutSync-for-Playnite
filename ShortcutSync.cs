@@ -1,13 +1,12 @@
-﻿using IWshRuntimeLibrary;
-using Microsoft.CSharp;
+﻿using Microsoft.CSharp;
 using Octokit;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using System;
+using System.Reflection;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -27,7 +26,7 @@ namespace ShortcutSync
         private Dictionary<Guid, Shortcut<Game>> Shortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
         private ShortcutSyncSettings PreviousSettings { get; set; }
 
-        public readonly Version version = new Version(1, 12, 1);
+        public readonly Version version = new Version(1, 12, 2);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
         public enum UpdateStatus
@@ -158,7 +157,7 @@ namespace ShortcutSync
             }
             settings.OnPathChanged += Settings_OnPathChanged;
             settings.OnSettingsChanged += Settings_OnSettingsChanged;
-            PreviousSettings = settings.GetClone();
+            PreviousSettings = settings.Copy();
         }
 
         private void Settings_OnSettingsChanged()
@@ -187,7 +186,7 @@ namespace ShortcutSync
                 }
                 UpdateShortcutDicts(settings.ShortcutPath);
                 UpdateShortcuts(PlayniteApi.Database.Games);
-                PreviousSettings = settings.GetClone();
+                PreviousSettings = settings.Copy();
             });
             thread.Start();
         }
