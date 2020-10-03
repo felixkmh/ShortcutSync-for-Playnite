@@ -550,7 +550,7 @@ namespace ShortcutSync
                         mIcon.SelectedIndex = 0;
                         mIcon.Save(GetShortcutIconPath(), MultiIconFormat.ICO);
 #if DEBUG
-                        if (File.Exists(GetGameIconPath())) throw new Exception($"{GetShortcutIconPath()} was not created!");
+                        // if (File.Exists(GetGameIconPath())) throw new Exception($"{GetShortcutIconPath()} was not created!");
 #endif
                         return true;
 
@@ -597,25 +597,29 @@ namespace ShortcutSync
                     return false;
                 }
 
-            if (MoveFileToFileOrDirectory(Path.Combine(LaunchScriptFolder, TargetObject.Id + ".vbs"), Path.Combine(newLaunchScriptPath, TargetObject.Id + ".vbs")))
+            bool moved = false;
+            if (MoveFileToFileOrDirectory(
+                Path.Combine(LaunchScriptFolder, TargetObject.Id + ".vbs"), 
+                Path.Combine(newLaunchScriptPath, TargetObject.Id + ".vbs")))
             {
                 if (Directory.GetFileSystemEntries(LaunchScriptFolder).Length == 0)
                     Directory.Delete(LaunchScriptFolder);
-                LaunchScriptFolder = newLaunchScriptPath;
+                moved = true;
             }
             else
             {
                 return false;
             }
 
-            if (MoveFileToFileOrDirectory(Path.Combine(
-                    LaunchScriptFolder, TargetObject.Id + ".visualelementsmanifest.xml"),
-                    Path.Combine(newLaunchScriptPath, TargetObject.Id + ".visualelementsmanifest.xml")
+            if (MoveFileToFileOrDirectory(
+                Path.Combine(LaunchScriptFolder, TargetObject.Id + ".visualelementsmanifest.xml"),
+                Path.Combine(newLaunchScriptPath, TargetObject.Id + ".visualelementsmanifest.xml")
                ))
             {
                 if (Directory.GetFileSystemEntries(LaunchScriptFolder).Length == 0)
                     Directory.Delete(LaunchScriptFolder);
-                LaunchScriptFolder = newLaunchScriptPath;
+                if (moved)
+                    LaunchScriptFolder = newLaunchScriptPath;
             }
             else
             {
