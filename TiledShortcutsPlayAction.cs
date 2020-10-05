@@ -42,7 +42,7 @@ namespace ShortcutSync
                 script =
                 "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
                 $"WshShell.CurrentDirectory = \"{WorkingDir}\"\n" +
-                $"WshShell.Run \"{TargetObject}\" & \" \" & \"{Arguments}\" , 1";
+                $"WshShell.Run \"{TargetPath}\" & \" \" & \"{Arguments}\" , 1";
             }
 
 
