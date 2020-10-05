@@ -26,7 +26,7 @@ namespace ShortcutSync
         private Dictionary<Guid, Shortcut<Game>> Shortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
         private ShortcutSyncSettings PreviousSettings { get; set; }
 
-        public readonly Version version = new Version(1, 12, 2);
+        public readonly Version version = new Version(1, 12, 3);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
         public enum UpdateStatus
@@ -485,6 +485,14 @@ namespace ShortcutSync
                     {
                         string workingDirectory = PlayniteApi.ExpandGameVariables(game, game.PlayAction.WorkingDir);
                         string targetPath = PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path);
+                        string arguments = game.PlayAction.Arguments;
+                        if (game.PlayAction.Type == GameActionType.Emulator)
+                        {
+                            var profile = PlayniteApi.Database.Emulators.Get(game.PlayAction.EmulatorId).Profiles.First(p => p.Id == game.PlayAction.EmulatorProfileId);
+                            targetPath = profile.Executable;
+                            workingDirectory = profile.WorkingDirectory;
+                            arguments = "\"" + PlayniteApi.ExpandGameVariables(game, profile.Arguments) + "\"";
+                        } 
                         Shortcuts.Add(game.Id,
                             new TiledShortcutsPlayAction
                             (
@@ -494,7 +502,7 @@ namespace ShortcutSync
                                 tileIconFolder: GetLauncherScriptIconsPath(settings.ShortcutPath),
                                 workingDirectory,
                                 targetPath,
-                                game.PlayAction.Arguments
+                                arguments
                             )
                         );
                     }
