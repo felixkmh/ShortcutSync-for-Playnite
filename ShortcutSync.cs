@@ -246,6 +246,7 @@ namespace ShortcutSync
             if (oldData.Name != newData.Name) return true;
             if (oldData.Hidden != newData.Hidden) return true;
             if (oldData.Source != newData.Source) return true;
+            if (oldData.IsInstalled != newData.IsInstalled) return true;
             return false;
         }
 
@@ -333,6 +334,7 @@ namespace ShortcutSync
                 !exludeBecauseHidden;
             return keepShortcut;
         }
+
 
 
         /// <summary>
