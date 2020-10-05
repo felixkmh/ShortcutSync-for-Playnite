@@ -18,12 +18,12 @@ namespace ShortcutSync
     public class ShortcutSync : Plugin
     {
         public static readonly ILogger logger = LogManager.GetLogger();
-        private Thread thread;
+        private Task backgroundTask = Task.CompletedTask;
         private ShortcutSyncSettings settings { get; set; }
         public ShortcutSyncSettingsView settingsView { get; set; }
         private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; } = new Dictionary<string, IList<Guid>>();
-        private Dictionary<Guid, Shortcut<Game>> Shortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
-        private ShortcutSyncSettings PreviousSettings { get; set; }
+        private Dictionary<Guid, Shortcut<Game>> existingShortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
+        private ShortcutSyncSettings previousSettings { get; set; }
 
         public readonly Version version = new Version(1, 12, 3);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
@@ -70,13 +70,10 @@ namespace ShortcutSync
                         if (FolderIsAccessible(settings.ShortcutPath))
                         {
                             CreateFolderStructure(settings.ShortcutPath);
-                            thread?.Join();
-                            thread = new Thread(() =>
-                            {
-                                UpdateShortcutDicts(settings.ShortcutPath);
-                                UpdateShortcuts(PlayniteApi.Database.Games);
+                            backgroundTask = backgroundTask.ContinueWith((_) => {
+                                UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
+                                UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
                             });
-                            thread.Start();
                         } else
                         {
                             PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
@@ -87,7 +84,7 @@ namespace ShortcutSync
                     "Create TiledShortcut for selected Games",
                     () =>
                     {
-                        CreateShortcuts(PlayniteApi.MainView.SelectedGames);
+                        CreateShortcuts(PlayniteApi.MainView.SelectedGames, settings.Copy());
 
                     }),
                 new ExtensionFunction(
@@ -96,10 +93,10 @@ namespace ShortcutSync
                         {
                             foreach (var game in PlayniteApi.MainView.SelectedGames)
                             {
-                                if (Shortcuts.ContainsKey(game.Id))
+                                if (existingShortcuts.ContainsKey(game.Id))
                                 {
-                                    Shortcuts[game.Id].Remove();
-                                    Shortcuts.Remove(game.Id);
+                                    existingShortcuts[game.Id].Remove();
+                                    existingShortcuts.Remove(game.Id);
                                 }
                             }
                             foreach (var game in PlayniteApi.MainView.SelectedGames)
@@ -114,8 +111,8 @@ namespace ShortcutSync
                                         foreach (var id in copys)
                                         {
                                             var copy = PlayniteApi.Database.Games[id];
-                                            if (copy != null && Shortcuts.ContainsKey(id))
-                                                Shortcuts[id].Name = Path.GetFileNameWithoutExtension(GetShortcutPath(copy, false, settings.SeparateFolders));
+                                            if (copy != null && existingShortcuts.ContainsKey(id))
+                                                existingShortcuts[id].Name = Path.GetFileNameWithoutExtension(GetShortcutPath(copy, settings.ShortcutPath, false, settings.SeparateFolders));
                                         }
                                 }
 
@@ -127,7 +124,7 @@ namespace ShortcutSync
         public override void OnApplicationStarted()
         {
             CreateFolderStructure(settings.ShortcutPath);
-            UpdateShortcutDicts(settings.ShortcutPath);
+            UpdateShortcutDicts(settings.ShortcutPath,settings);
             if (CreateFolderStructure(settings.ShortcutPath))
             {
                 // (existingShortcuts, shortcutNameToGameId) = GetExistingShortcuts(settings.ShortcutPath);
@@ -135,12 +132,10 @@ namespace ShortcutSync
                 {
                     if (FolderIsAccessible(settings.ShortcutPath))
                     {
-                        thread?.Join();
-                        thread = new Thread(() =>
+                        backgroundTask = backgroundTask.ContinueWith((_) =>
                         {
-                            UpdateShortcuts(PlayniteApi.Database.Games);
+                            UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
                         });
-                        thread.Start();
                     }
                     else
                     {
@@ -156,38 +151,41 @@ namespace ShortcutSync
             }
             settings.OnPathChanged += Settings_OnPathChanged;
             settings.OnSettingsChanged += Settings_OnSettingsChanged;
-            PreviousSettings = settings.Copy();
+            previousSettings = settings.Copy();
         }
 
         private void Settings_OnSettingsChanged()
         {
-            thread?.Join();
-            thread = new Thread(() =>
+            backgroundTask = backgroundTask.ContinueWith((_) =>
             {
-                if (settings.UsePlayAction != PreviousSettings.UsePlayAction)
+                var settingsSnapshot = settings.Copy();
+                if (settingsSnapshot.UsePlayAction != previousSettings.UsePlayAction)
                 {
-                    UpdateShortcutDicts(PreviousSettings.ShortcutPath);
-                    foreach (var shortcut in Shortcuts.Values) shortcut.Remove();
+                    UpdateShortcutDicts(previousSettings.ShortcutPath, settingsSnapshot);
+                    foreach (var shortcut in existingShortcuts.Values) shortcut.Remove();
                 }
-                if (settings.ShortcutPath != PreviousSettings.ShortcutPath
-                || settings.SeparateFolders != PreviousSettings.SeparateFolders)
+                if (settingsSnapshot.ShortcutPath != previousSettings.ShortcutPath
+                || settingsSnapshot.SeparateFolders != previousSettings.SeparateFolders)
                 {
-                    UpdateShortcutDicts(PreviousSettings.ShortcutPath);
-                    foreach (var shortcut in Shortcuts.Values)
+                    UpdateShortcutDicts(previousSettings.ShortcutPath, settingsSnapshot);
+                    foreach (var shortcut in existingShortcuts.Values)
                     {
                         bool moved = shortcut.Move(
-                            GetShortcutPath(shortcut.TargetObject, HasExistingShortcutDuplicates(shortcut.TargetObject) && !settings.SeparateFolders, settings.SeparateFolders),
-                            GetLauncherScriptIconsPath(settings.ShortcutPath),
-                            GetLauncherScriptPath(settings.ShortcutPath)
+                            GetShortcutPath(
+                                shortcut.TargetObject,
+                                settingsSnapshot.ShortcutPath,
+                                HasExistingShortcutDuplicates(shortcut.TargetObject) && !settingsSnapshot.SeparateFolders,
+                                settingsSnapshot.SeparateFolders),
+                            GetLauncherScriptIconsPath(settingsSnapshot.ShortcutPath),
+                            GetLauncherScriptPath(settingsSnapshot.ShortcutPath)
                         );
                         if (!moved) shortcut.Remove();
                     }
                 }
-                UpdateShortcutDicts(settings.ShortcutPath);
-                UpdateShortcuts(PlayniteApi.Database.Games);
-                PreviousSettings = settings.Copy();
+                UpdateShortcutDicts(settingsSnapshot.ShortcutPath, settingsSnapshot);
+                UpdateShortcuts(PlayniteApi.Database.Games, settingsSnapshot);
+                previousSettings = settingsSnapshot;
             });
-            thread.Start();
         }
 
         private void Settings_OnPathChanged(string oldPath, string newPath)
@@ -196,7 +194,7 @@ namespace ShortcutSync
             {
                 if (CreateFolderStructure(newPath))
                 {
-                    UpdateShortcutDicts(newPath);
+                    UpdateShortcutDicts(newPath, settings.Copy());
                 }
             }
         }
@@ -210,9 +208,9 @@ namespace ShortcutSync
         private void Games_ItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
         {
             // Update or create shortcuts for newly added games
-            CreateShortcuts(from game in e.AddedItems where ShouldKeepShortcut(game) select game);
+            CreateShortcuts(from game in e.AddedItems where ShouldKeepShortcut(game, settings.Copy()) select game, settings.Copy());
             // Remove shortcuts to deleted games
-            RemoveShortcuts(e.RemovedItems);
+            RemoveShortcuts(e.RemovedItems, settings.Copy());
         }
 
         /// <summary>
@@ -225,7 +223,7 @@ namespace ShortcutSync
         {
             try
             {
-                UpdateShortcuts(from update in e.UpdatedItems where SignificantChanges(update.OldData, update.NewData) select update.NewData, true);
+                UpdateShortcuts(from update in e.UpdatedItems where SignificantChanges(update.OldData, update.NewData) select update.NewData, settings.Copy(), true);
             }
 #pragma warning disable CS0168 // Variable ist deklariert, wird jedoch niemals verwendet
             catch (Exception ex)
@@ -322,7 +320,7 @@ namespace ShortcutSync
         /// </summary>
         /// <param name="game">The game that is ckecked.</param>
         /// <returns>Whether shortcut should be kept.</returns>
-        private bool ShouldKeepShortcut(Game game)
+        private static bool ShouldKeepShortcut(Game game, ShortcutSyncSettings settings)
         {
             bool sourceEnabled = false;
             settings.SourceOptions.TryGetValue(GetSourceName(game), out sourceEnabled);
@@ -346,18 +344,18 @@ namespace ShortcutSync
         /// <returns>
         /// String containing path and file name for the .url shortcut.
         /// </returns>
-        private string GetShortcutPath(Game game, bool includeSourceName = true, bool seperateFolders = false, string extension = ".lnk")
+        private static string GetShortcutPath(Game game, string basePath, bool includeSourceName = true, bool seperateFolders = false, string extension = ".lnk")
         {
             var validName = GetSafeFileName(game.Name);
             string path;
 
             if (seperateFolders)
             {
-                path = Path.Combine(settings.ShortcutPath, GetSourceName(game));
+                path = Path.Combine(basePath, GetSourceName(game));
             }
             else
             {
-                path = Path.Combine(settings.ShortcutPath);
+                path = Path.Combine(basePath);
             }
 
             if (includeSourceName && !seperateFolders)
@@ -405,7 +403,7 @@ namespace ShortcutSync
         /// <param name="description">string containing the <see cref="Guid"/>.</param>
         /// <param name="gameId">The extracted <see cref="Guid"/>.</param>
         /// <returns>Whether a valid <see cref="Guid"/> could be parsed.</returns>
-        private bool ExtractIdFromLnkDescription(string description, out Guid gameId)
+        private static bool ExtractIdFromLnkDescription(string description, out Guid gameId)
         {
             int startId = -1, endId = -1;
             for (int i = description.Length - 1; i >= 0; --i)
@@ -431,23 +429,23 @@ namespace ShortcutSync
             }
         }
 
-        public void UpdateShortcuts(IEnumerable<Game> games, bool forceUpdate = false)
+        public void UpdateShortcuts(IEnumerable<Game> games, ShortcutSyncSettings settings, bool forceUpdate = false)
         {
-            CreateShortcuts(from game in games where ShouldKeepShortcut(game) select game);
-            RemoveShortcuts(from game in games where !ShouldKeepShortcut(game) select game);
-            if (forceUpdate) foreach (var game in games) if (Shortcuts.ContainsKey(game.Id)) Shortcuts[game.Id].Update(true);
+            CreateShortcuts(from game in games where ShouldKeepShortcut(game, settings) select game, settings);
+            RemoveShortcuts(from game in games where !ShouldKeepShortcut(game, settings) select game, settings);
+            if (forceUpdate) foreach (var game in games) if (existingShortcuts.ContainsKey(game.Id)) existingShortcuts[game.Id].Update(true);
         }
 
-        public void CreateShortcuts(IEnumerable<Game> games)
+        public void CreateShortcuts(IEnumerable<Game> games, ShortcutSyncSettings settings)
         {
             foreach (var game in games)
             {
-                if (Shortcuts.ContainsKey(game.Id))
+                if (existingShortcuts.ContainsKey(game.Id))
                 {
-                    if (!Shortcuts[game.Id].Exists)
+                    if (!existingShortcuts[game.Id].Exists)
                     {
-                        Shortcuts[game.Id].Remove();
-                        Shortcuts.Remove(game.Id);
+                        existingShortcuts[game.Id].Remove();
+                        existingShortcuts.Remove(game.Id);
                         if (shortcutNameToGameId.ContainsKey(game.Name.GetSafeFileName().ToLower()))
                             shortcutNameToGameId[game.Name.GetSafeFileName().ToLower()].Remove(game.Id);
                     }
@@ -463,9 +461,9 @@ namespace ShortcutSync
                         var copy = PlayniteApi.Database.Games.Get(copyId);
                         if (copy != null && copyId != game.Id)
                         {
-                            if (Shortcuts.ContainsKey(copyId))
+                            if (existingShortcuts.ContainsKey(copyId))
                             {
-                                Shortcuts[copyId].Name = Path.GetFileNameWithoutExtension(GetShortcutPath(copy, true, settings.SeparateFolders));
+                                existingShortcuts[copyId].Name = Path.GetFileNameWithoutExtension(GetShortcutPath(copy, settings.ShortcutPath, true, settings.SeparateFolders));
                                 hasDuplicates = true;
                             }
                         }
@@ -476,9 +474,9 @@ namespace ShortcutSync
                 {
                     shortcutNameToGameId[game.Name.GetSafeFileName().ToLower()] = new List<Guid>() { game.Id };
                 }
-                if (Shortcuts.TryGetValue(game.Id, out Shortcut<Game> existing))
+                if (existingShortcuts.TryGetValue(game.Id, out Shortcut<Game> existing))
                 {
-                    existing.Name = Path.GetFileNameWithoutExtension(GetShortcutPath(game, hasDuplicates, settings.SeparateFolders));
+                    existing.Name = Path.GetFileNameWithoutExtension(GetShortcutPath(game, settings.ShortcutPath, hasDuplicates, settings.SeparateFolders));
                 }
                 else
                 {
@@ -494,11 +492,11 @@ namespace ShortcutSync
                             workingDirectory = profile.WorkingDirectory;
                             arguments = "\"" + PlayniteApi.ExpandGameVariables(game, profile.Arguments) + "\"";
                         } 
-                        Shortcuts.Add(game.Id,
+                        existingShortcuts.Add(game.Id,
                             new TiledShortcutsPlayAction
                             (
                                 targetGame: game,
-                                shortcutPath: GetShortcutPath(game, hasDuplicates, settings.SeparateFolders),
+                                shortcutPath: GetShortcutPath(game, settings.ShortcutPath, hasDuplicates, settings.SeparateFolders),
                                 launchScriptFolder: GetLauncherScriptPath(settings.ShortcutPath),
                                 tileIconFolder: GetLauncherScriptIconsPath(settings.ShortcutPath),
                                 workingDirectory,
@@ -509,11 +507,11 @@ namespace ShortcutSync
                     }
                     else
                     {
-                        Shortcuts.Add(game.Id,
+                        existingShortcuts.Add(game.Id,
                             new TiledShortcut
                             (
                                 targetGame: game,
-                                shortcutPath: GetShortcutPath(game, hasDuplicates, settings.SeparateFolders),
+                                shortcutPath: GetShortcutPath(game, settings.ShortcutPath, hasDuplicates, settings.SeparateFolders),
                                 launchScriptFolder: GetLauncherScriptPath(settings.ShortcutPath),
                                 tileIconFolder: GetLauncherScriptIconsPath(settings.ShortcutPath)
                             )
@@ -523,7 +521,7 @@ namespace ShortcutSync
             }
             // Stopwatch stopwatch = new Stopwatch();
             // stopwatch.Start();
-            Parallel.ForEach(games, game => { if (Shortcuts.ContainsKey(game.Id)) Shortcuts[game.Id].CreateOrUpdate(); });
+            Parallel.ForEach(games, game => { if (existingShortcuts.ContainsKey(game.Id)) existingShortcuts[game.Id].CreateOrUpdate(); });
             // stopwatch.Stop();
             // PlayniteApi.Dialogs.ShowMessage($"Created {Shortcuts.Count} shortcuts in {stopwatch.ElapsedMilliseconds / 1000f} seconds.");
             //foreach (var game in games)
@@ -532,14 +530,14 @@ namespace ShortcutSync
             }
         }
 
-        public void RemoveShortcuts(IEnumerable<Game> games)
+        public void RemoveShortcuts(IEnumerable<Game> games, ShortcutSyncSettings settings)
         {
             foreach (var game in games)
             {
-                if (Shortcuts.ContainsKey(game.Id))
+                if (existingShortcuts.ContainsKey(game.Id))
                 {
-                    Shortcuts[game.Id].Remove();
-                    Shortcuts.Remove(game.Id);
+                    existingShortcuts[game.Id].Remove();
+                    existingShortcuts.Remove(game.Id);
                 }
             }
             foreach (var game in games)
@@ -554,8 +552,8 @@ namespace ShortcutSync
                         foreach (var id in copys)
                         {
                             var copy = PlayniteApi.Database.Games[id];
-                            if (copy != null && Shortcuts.ContainsKey(id))
-                                Shortcuts[id].Name = Path.GetFileNameWithoutExtension(GetShortcutPath(copy, false, settings.SeparateFolders));
+                            if (copy != null && existingShortcuts.ContainsKey(id))
+                                existingShortcuts[id].Name = Path.GetFileNameWithoutExtension(GetShortcutPath(copy, settings.ShortcutPath, false, settings.SeparateFolders));
                         }
                 }
 
@@ -564,10 +562,10 @@ namespace ShortcutSync
 
         public void RemoveFromShortcutDicts(Guid gameId)
         {
-            if (Shortcuts.TryGetValue(gameId, out var shortcut))
+            if (existingShortcuts.TryGetValue(gameId, out var shortcut))
             {
                 shortcut.Remove();
-                Shortcuts.Remove(gameId);
+                existingShortcuts.Remove(gameId);
             }
 
             var game = PlayniteApi.Database.Games.Get(gameId);
@@ -582,9 +580,9 @@ namespace ShortcutSync
             }
         }
 
-        public void UpdateShortcutDicts(string folderPath, string shortcutName = "")
+        public void UpdateShortcutDicts(string folderPath, ShortcutSyncSettings settings, string shortcutName = "")
         {
-            Shortcuts.Clear();
+            existingShortcuts.Clear();
             shortcutNameToGameId.Clear();
 
             if (!Directory.Exists(folderPath)) return;
@@ -598,7 +596,7 @@ namespace ShortcutSync
                     var game = PlayniteApi.Database.Games.Get(gameId);
                     if (game != null)
                     {
-                        if (Shortcuts.TryGetValue(game.Id, out var shortcut))
+                        if (existingShortcuts.TryGetValue(game.Id, out var shortcut))
                         {
                             shortcut.Remove();
                         }
@@ -608,7 +606,7 @@ namespace ShortcutSync
                             {
                                 string workingDirectory = PlayniteApi.ExpandGameVariables(game, game.PlayAction.WorkingDir);
                                 string targetPath = PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path);
-                                Shortcuts.Add(game.Id,
+                                existingShortcuts.Add(game.Id,
                                     new TiledShortcutsPlayAction
                                     (
                                         targetGame: game,
@@ -624,7 +622,7 @@ namespace ShortcutSync
                         }
                         else
                         {
-                            Shortcuts[game.Id] = new TiledShortcut(game, file, GetLauncherScriptPath(folderPath), GetLauncherScriptIconsPath(folderPath));
+                            existingShortcuts[game.Id] = new TiledShortcut(game, file, GetLauncherScriptPath(folderPath), GetLauncherScriptIconsPath(folderPath));
                         }
                         string safeGameName = game.Name.GetSafeFileName().ToLower();
                         if (!shortcutNameToGameId.ContainsKey(safeGameName))
@@ -638,7 +636,7 @@ namespace ShortcutSync
         }
 
         /// <summary>
-        /// Opens/Creates and returns a <see cref="IWshShortcut"/> at a 
+        /// Opens/Creates and returns a <see cref="ShellLink.Shortcut"/> at a 
         /// given path.
         /// </summary>
         /// <param name="shortcutPath">Full path to the shortcut.</param>
@@ -646,22 +644,6 @@ namespace ShortcutSync
         public ShellLink.Shortcut OpenLnk(string shortcutPath)
         {
             return ShellLink.Shortcut.ReadFromFile(shortcutPath);
-            /*
-            if (System.IO.File.Exists(shortcutPath))
-            {
-                try
-                {
-                    var shell = new WshShell();
-                    var shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
-                    return shortcut;
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex, $"Could not open shortcut at \"{shortcutPath}\".");
-                }
-            }
-            return null;
-            */
         }
 
         /// <summary>
@@ -669,7 +651,7 @@ namespace ShortcutSync
         /// </summary>
         /// <param name="folderPath"></param>
         /// <returns>Whether the folder can be written to.</returns>
-        private bool FolderIsAccessible(string folderPath)
+        private static bool FolderIsAccessible(string folderPath)
         {
             bool accessible = false;
             try
@@ -691,7 +673,7 @@ namespace ShortcutSync
         /// </summary>
         /// <param name="game"></param>
         /// <returns>Source name or "Undefined" if no source exists.</returns>
-        private string GetSourceName(Game game)
+        private static string GetSourceName(Game game)
         {
             if (game.Source == null)
             {
@@ -763,17 +745,17 @@ namespace ShortcutSync
         }
 
 
-        private string GetLauncherScriptPath(string shortcutPath)
+        private static string GetLauncherScriptPath(string shortcutPath)
         {
             return Path.Combine(shortcutPath, Constants.LAUNCHSCRIPTFOLDERNAME);
         }
 
-        private string GetLauncherScriptIconsPath(string shortcutPath)
+        private static string GetLauncherScriptIconsPath(string shortcutPath)
         {
             return Path.Combine(shortcutPath, Constants.LAUNCHSCRIPTFOLDERNAME, Constants.ICONFOLDERNAME);
         }
 
-        private bool CreateFolderStructure(string path)
+        private static bool CreateFolderStructure(string path)
         {
             try
             {
@@ -790,7 +772,7 @@ namespace ShortcutSync
             }
         }
 
-        private bool MergeMoveDirectory(string source, string target, bool overwrite = false)
+        private static bool MergeMoveDirectory(string source, string target, bool overwrite = false)
         {
             if (Directory.Exists(target))
             {
