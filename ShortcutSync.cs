@@ -21,7 +21,6 @@ namespace ShortcutSync
         private Thread thread;
         private ShortcutSyncSettings settings { get; set; }
         public ShortcutSyncSettingsView settingsView { get; set; }
-        private Dictionary<Guid, string> existingShortcuts { get; set; }
         private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; } = new Dictionary<string, IList<Guid>>();
         private Dictionary<Guid, Shortcut<Game>> Shortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
         private ShortcutSyncSettings PreviousSettings { get; set; }
