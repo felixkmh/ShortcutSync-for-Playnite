@@ -1,5 +1,6 @@
 ﻿using Playnite.SDK.Models;
 using System;
+using System.IO;
 
 namespace ShortcutSync
 {
@@ -29,20 +30,23 @@ namespace ShortcutSync
             {
                 script =
                 "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
-                $"WshShell.Run \"{@"explorer.exe"}\" & \" \" & \"{Arguments}\" , 1";
+                $"WshShell.Run \"{@"explorer.exe"}\" & \" \" & \"{Arguments}\" , 1\n" +
+                "Set WshShell=Nothing";
             }
             else if (TargetObject.PlayAction.Type == GameActionType.URL)
             {
                 script =
                 "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
-                $"WshShell.Run \"{TargetObject.PlayAction.Path}\", 1";
+                $"WshShell.Run \"{TargetObject.PlayAction.Path}\", 1\n" +
+                "Set WshShell=Nothing";
             }
             else
             {
                 script =
                 "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
                 $"WshShell.CurrentDirectory = \"{WorkingDir}\"\n" +
-                $"WshShell.Run \"{TargetPath}\" & \" \" & \"{Arguments}\" , 1";
+                $"Call WshShell.Run (\"{TargetPath}\" & \" \" & \"{Arguments}\" , 1, false)\n" +
+                "Set WshShell=Nothing";
             }
 
 
