@@ -139,6 +139,11 @@ namespace ShortcutSync
             link.WriteToFile(ShortcutPath);
         }
 
+        protected ShellLink.Shortcut OpenLnk()
+        {
+            return ShellLink.Shortcut.ReadFromFile(ShortcutPath);
+        }
+
         public override bool Remove()
         {
 
@@ -165,9 +170,10 @@ namespace ShortcutSync
             {
                 if (IsOutdated || forceUpdate)
                 {
-                    // RenameShortcut(TargetObject.Name.GetSafeFileName());
                     CreateShortcutIcon();
                     CreateTileImage();
+                    CreateVbsLauncher();
+                    CreateVisualElementsManifest();
                     CreateLnk();
                     return true;
                 }
@@ -265,10 +271,11 @@ namespace ShortcutSync
                 $"id = \"{TargetObject.Id}\"\n" +
 
                 "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
-                "WshShell.Run prefix &id, 1";
+                "WshShell.Run prefix & id, 1\n"+
+                "Set WshShell=Nothing"; ;
             try
             {
-                using (var scriptFile = System.IO.File.CreateText(fullPath))
+                using (var scriptFile = new StreamWriter(fullPath, false))
                 {
                     scriptFile.Write(script);
                 }
@@ -301,7 +308,7 @@ namespace ShortcutSync
                 "</Application>";
             try
             {
-                using (var scriptFile = System.IO.File.CreateText(fullPath))
+                using (var scriptFile = new StreamWriter(fullPath, false))
                 {
                     scriptFile.Write(script);
                 }
@@ -586,7 +593,9 @@ namespace ShortcutSync
                 throw new ArgumentException($"{newLaunchScriptPath} is not a valid directory.", nameof(newLaunchScriptPath));
 
             if (!TargetObject.Icon.IsNullOrEmpty())
-                if (MoveFileToFileOrDirectory(Path.Combine(TileIconFolder, TargetObject.Id + ".png"), Path.Combine(newTileIconPath, TargetObject.Id + ".png")))
+                if (MoveFileToFileOrDirectory(
+                    Path.Combine(TileIconFolder, TargetObject.Id + ".png"), 
+                    Path.Combine(newTileIconPath, TargetObject.Id + ".png")))
                 {
                     if (Directory.GetFileSystemEntries(TileIconFolder).Length == 0)
                         Directory.Delete(TileIconFolder);
@@ -619,7 +628,14 @@ namespace ShortcutSync
                 if (Directory.GetFileSystemEntries(LaunchScriptFolder).Length == 0)
                     Directory.Delete(LaunchScriptFolder);
                 if (moved)
+                {
                     LaunchScriptFolder = newLaunchScriptPath;
+                    var lnk = OpenLnk();
+                    lnk.StringData.RelativePath = GetLauncherPath();
+                    lnk.ExtraData.EnvironmentVariableDataBlock.TargetAnsi = GetLauncherPath();
+                    lnk.ExtraData.EnvironmentVariableDataBlock.TargetUnicode = GetLauncherPath();
+                    lnk.WriteToFile(ShortcutPath);
+                }
             }
             else
             {
@@ -650,13 +666,14 @@ namespace ShortcutSync
 
         protected bool MoveFileToFileOrDirectory(string source, string target, bool overwrite = false)
         {
-            if (source == target) return true;
             var sourceType = source.GetPathType();
             var targetType = source.GetPathType();
 
             string newPath = target;
             if (targetType == Extensions.PathType.Directory)
                 newPath = Path.Combine(target, Path.GetFileName(source));
+
+            if (source == newPath) return true;
 
             if (sourceType != Extensions.PathType.File) return false;
             if (!File.Exists(source)) return false;
