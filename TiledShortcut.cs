@@ -631,10 +631,13 @@ namespace ShortcutSync
                 {
                     LaunchScriptFolder = newLaunchScriptPath;
                     var lnk = OpenLnk();
-                    lnk.StringData.RelativePath = GetLauncherPath();
-                    lnk.ExtraData.EnvironmentVariableDataBlock.TargetAnsi = GetLauncherPath();
-                    lnk.ExtraData.EnvironmentVariableDataBlock.TargetUnicode = GetLauncherPath();
-                    lnk.WriteToFile(ShortcutPath);
+                    if (lnk.StringData.RelativePath != GetLauncherPath())
+                    {
+                        lnk.StringData.RelativePath = GetLauncherPath();
+                        lnk.ExtraData.EnvironmentVariableDataBlock.TargetAnsi = GetLauncherPath();
+                        lnk.ExtraData.EnvironmentVariableDataBlock.TargetUnicode = GetLauncherPath();
+                        lnk.WriteToFile(ShortcutPath);
+                    }
                 }
             }
             else
