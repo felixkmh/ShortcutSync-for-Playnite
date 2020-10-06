@@ -25,7 +25,7 @@ namespace ShortcutSync
         private Dictionary<Guid, Shortcut<Game>> existingShortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
         private ShortcutSyncSettings previousSettings { get; set; }
 
-        public readonly Version version = new Version(1, 12, 3);
+        public readonly Version version = new Version(1, 13);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
         public enum UpdateStatus
@@ -159,10 +159,13 @@ namespace ShortcutSync
             backgroundTask = backgroundTask.ContinueWith((_) =>
             {
                 var settingsSnapshot = settings.Copy();
-                if (settingsSnapshot.UsePlayAction != previousSettings.UsePlayAction)
+                foreach(var playActionOpt in settings.EnabledPlayActions)
                 {
-                    UpdateShortcutDicts(previousSettings.ShortcutPath, settingsSnapshot);
-                    foreach (var shortcut in existingShortcuts.Values) shortcut.Remove();
+                    if (playActionOpt.Value != previousSettings.EnabledPlayActions[playActionOpt.Key])
+                        foreach (var shortcut in existingShortcuts.Values) {
+                            if (GetSourceName(shortcut.TargetObject) == playActionOpt.Key)
+                                shortcut.Remove();
+                        }
                 }
                 if (settingsSnapshot.ShortcutPath != previousSettings.ShortcutPath
                 || settingsSnapshot.SeparateFolders != previousSettings.SeparateFolders)
@@ -176,8 +179,8 @@ namespace ShortcutSync
                                 settingsSnapshot.ShortcutPath,
                                 HasExistingShortcutDuplicates(shortcut.TargetObject) && !settingsSnapshot.SeparateFolders,
                                 settingsSnapshot.SeparateFolders),
-                            GetLauncherScriptIconsPath(settingsSnapshot.ShortcutPath),
-                            GetLauncherScriptPath(settingsSnapshot.ShortcutPath)
+                            GetLauncherScriptIconsPath(),
+                            GetLauncherScriptPath()
                         );
                         if (!moved) shortcut.Remove();
                     }
@@ -480,7 +483,7 @@ namespace ShortcutSync
                 }
                 else
                 {
-                    if (settings.UsePlayAction && game.PlayAction != null)
+                    if (settings.EnabledPlayActions.ContainsKey(GetSourceName(game)) && settings.EnabledPlayActions[GetSourceName(game)] && game.PlayAction != null)
                     {
                         string workingDirectory = PlayniteApi.ExpandGameVariables(game, game.PlayAction.WorkingDir);
                         string targetPath = PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path);
@@ -497,8 +500,8 @@ namespace ShortcutSync
                             (
                                 targetGame: game,
                                 shortcutPath: GetShortcutPath(game, settings.ShortcutPath, hasDuplicates, settings.SeparateFolders),
-                                launchScriptFolder: GetLauncherScriptPath(settings.ShortcutPath),
-                                tileIconFolder: GetLauncherScriptIconsPath(settings.ShortcutPath),
+                                launchScriptFolder: GetLauncherScriptPath(),
+                                tileIconFolder: GetLauncherScriptIconsPath(),
                                 workingDirectory,
                                 targetPath,
                                 arguments
@@ -512,8 +515,8 @@ namespace ShortcutSync
                             (
                                 targetGame: game,
                                 shortcutPath: GetShortcutPath(game, settings.ShortcutPath, hasDuplicates, settings.SeparateFolders),
-                                launchScriptFolder: GetLauncherScriptPath(settings.ShortcutPath),
-                                tileIconFolder: GetLauncherScriptIconsPath(settings.ShortcutPath)
+                                launchScriptFolder: GetLauncherScriptPath(),
+                                tileIconFolder: GetLauncherScriptIconsPath()
                             )
                         );
                     }
@@ -600,7 +603,7 @@ namespace ShortcutSync
                         {
                             shortcut.Remove();
                         }
-                        if (settings.UsePlayAction)
+                        if (settings.EnabledPlayActions.ContainsKey(GetSourceName(game)) && settings.EnabledPlayActions[GetSourceName(game)])
                         {
                             if (game.PlayAction != null)
                             {
@@ -611,8 +614,8 @@ namespace ShortcutSync
                                     (
                                         targetGame: game,
                                         shortcutPath: file,
-                                        launchScriptFolder: GetLauncherScriptPath(folderPath),
-                                        tileIconFolder: GetLauncherScriptIconsPath(folderPath),
+                                        launchScriptFolder: GetLauncherScriptPath(),
+                                        tileIconFolder: GetLauncherScriptIconsPath(),
                                         workingDirectory,
                                         targetPath,
                                         game.PlayAction.Arguments
@@ -622,7 +625,7 @@ namespace ShortcutSync
                         }
                         else
                         {
-                            existingShortcuts[game.Id] = new TiledShortcut(game, file, GetLauncherScriptPath(folderPath), GetLauncherScriptIconsPath(folderPath));
+                            existingShortcuts[game.Id] = new TiledShortcut(game, file, GetLauncherScriptPath(), GetLauncherScriptIconsPath());
                         }
                         string safeGameName = game.Name.GetSafeFileName().ToLower();
                         if (!shortcutNameToGameId.ContainsKey(safeGameName))
@@ -745,23 +748,23 @@ namespace ShortcutSync
         }
 
 
-        private static string GetLauncherScriptPath(string shortcutPath)
+        private string GetLauncherScriptPath()
         {
-            return Path.Combine(shortcutPath, Constants.LAUNCHSCRIPTFOLDERNAME);
+            return Path.Combine(GetPluginUserDataPath(), Constants.LAUNCHSCRIPTFOLDERNAME);
         }
 
-        private static string GetLauncherScriptIconsPath(string shortcutPath)
+        private string GetLauncherScriptIconsPath()
         {
-            return Path.Combine(shortcutPath, Constants.LAUNCHSCRIPTFOLDERNAME, Constants.ICONFOLDERNAME);
+            return Path.Combine(GetPluginUserDataPath(), Constants.LAUNCHSCRIPTFOLDERNAME, Constants.ICONFOLDERNAME);
         }
 
-        private static bool CreateFolderStructure(string path)
+        private bool CreateFolderStructure(string path)
         {
             try
             {
                 Directory.CreateDirectory(path);
-                var launchScriptsFolder = Directory.CreateDirectory(GetLauncherScriptPath(path));
-                Directory.CreateDirectory(GetLauncherScriptIconsPath(path));
+                var launchScriptsFolder = Directory.CreateDirectory(GetLauncherScriptPath());
+                Directory.CreateDirectory(GetLauncherScriptIconsPath());
                 launchScriptsFolder.Attributes = FileAttributes.Directory | FileAttributes.Hidden;
                 return true;
             }
