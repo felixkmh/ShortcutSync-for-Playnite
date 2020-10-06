@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows.Controls;
 
 namespace ShortcutSync
@@ -19,12 +20,12 @@ namespace ShortcutSync
             System.Environment.ExpandEnvironmentVariables(Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.StartMenu), "PlayniteGames"));
 
         public bool InstalledOnly { get; set; } = true;
-        public bool UsePlayAction { get; set; } = false;
         public bool UpdateOnStartup { get; set; } = false;
         public bool ForceUpdate { get; set; } = false;
         public bool ExcludeHidden { get; set; } = false;
         public bool SeparateFolders { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
+        public Dictionary<string, bool> EnabledPlayActions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
 
 
         // Parameterless constructor must exist if you want to use LoadPluginSettings method.
@@ -50,8 +51,9 @@ namespace ShortcutSync
                     ShortcutPath = savedSettings.ShortcutPath;
                 if (savedSettings.SourceOptions != null)
                     SourceOptions = savedSettings.SourceOptions;
+                if (savedSettings.EnabledPlayActions != null)
+                    EnabledPlayActions = savedSettings.EnabledPlayActions;
                 UpdateOnStartup = savedSettings.UpdateOnStartup;
-                UsePlayAction = savedSettings.UsePlayAction;
                 ExcludeHidden = savedSettings.ExcludeHidden;
                 SeparateFolders = savedSettings.SeparateFolders;
             }
@@ -77,7 +79,7 @@ namespace ShortcutSync
                 });
             });
 
-            var bt = (Button)plugin.settingsView.FindName("SelectFolderButton");
+            var bt = plugin.settingsView.SelectFolderButton;
             bt.Click += Bt_Click;
             // Get all available source names
             foreach (var src in plugin.PlayniteApi.Database.Sources)
@@ -87,23 +89,64 @@ namespace ShortcutSync
                 {
                     SourceOptions.Add(src.Name, false);
                 }
+                if (!EnabledPlayActions.ContainsKey(src.Name))
+                {
+                    EnabledPlayActions.Add(src.Name, false);
+                }
             }
             if (!SourceOptions.ContainsKey(Constants.UNDEFINEDSOURCE))
             {
                 SourceOptions.Add(Constants.UNDEFINEDSOURCE, false);
             }
-            // Set view up
-            var container = plugin.settingsView.SourceSettingsStack;
+            if (!EnabledPlayActions.ContainsKey(Constants.UNDEFINEDSOURCE))
+            {
+                EnabledPlayActions.Add(Constants.UNDEFINEDSOURCE, false);
+            }
+            // Set up view
+            var container = plugin.settingsView.SourceNamesStack;
+            container.Children.Clear();
+            foreach (var srcOpt in SourceOptions)
+            {
+                // Add label and set some properties
+                var label = new Label();
+                label.Content = srcOpt.Key;
+                label.MinWidth = 50;
+                label.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+                label.Margin = new System.Windows.Thickness { Bottom = 2, Left = 5, Right = 5, Top = 2 };
+                label.Height = 20;
+                label.Tag = srcOpt.Key;
+                container.Children.Add(label);
+            }
+            container = plugin.settingsView.SourceSettingsStack;
             container.Children.Clear();
             foreach (var srcOpt in SourceOptions)
             {
                 // Add checkboxes and set some properties
                 var checkBox = new CheckBox();
-                checkBox.Content = srcOpt.Key;
+                checkBox.Content = null;
                 checkBox.IsChecked = srcOpt.Value;
-                checkBox.MinWidth = 150;
-                checkBox.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+                checkBox.MinWidth = 50;
+                checkBox.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+                checkBox.Margin = new System.Windows.Thickness { Bottom = 2, Left = 5, Right = 5, Top = 2 };
+                checkBox.Height = 20;
+                checkBox.Tag = srcOpt.Key;
+                checkBox.ToolTip = $"If enabled, shortcuts to games from {srcOpt.Key} are created and maintained on update.";
                 container.Children.Add(checkBox);
+            }
+            plugin.settingsView.PlayActionSettingsStack.Children.Clear();
+            foreach (var playActionOpt in EnabledPlayActions)
+            {
+                // Add checkboxes and set some properties
+                var checkBox = new CheckBox();
+                checkBox.Content = null;
+                checkBox.IsChecked = playActionOpt.Value;
+                checkBox.MinWidth = 50;
+                checkBox.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+                checkBox.Margin = new System.Windows.Thickness { Bottom = 2, Left = 5, Right = 5, Top = 2 };
+                checkBox.Height = 20;
+                checkBox.Tag = playActionOpt.Key;
+                checkBox.ToolTip = $"If enabled, shortuts try to start games from {playActionOpt.Key} with their native launcher or without any launcher (bypassing Playnite), depending on the existing PlayAction of that game.";
+                plugin.settingsView.PlayActionSettingsStack.Children.Add(checkBox);
             }
         }
 
@@ -128,7 +171,12 @@ namespace ShortcutSync
             var container = plugin.settingsView.SourceSettingsStack;
             foreach (CheckBox checkBox in container.Children)
             {
-                SourceOptions[checkBox.Content.ToString()] = (bool)checkBox.IsChecked;
+                SourceOptions[checkBox.Tag as string] = (bool)checkBox.IsChecked;
+            }
+            container = plugin.settingsView.PlayActionSettingsStack;
+            foreach (CheckBox checkBox in container.Children)
+            {
+                EnabledPlayActions[checkBox.Tag as string] = (bool)checkBox.IsChecked;
             }
             // Code executed when user decides to confirm changes made since BeginEdit was called.
             plugin.SavePluginSettings(this);

@@ -6,30 +6,46 @@
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
     <ScrollViewer>
-    <StackPanel Margin="5">
-        <Label Content="Shortcut Path:"/>
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBox Text="{Binding ShortcutPath, Mode=OneTime}" Grid.Column="0" x:Name="PathTextBox"/>
-            <Button x:Name="SelectFolderButton" Content="Select Folder" Grid.Column="1" HorizontalAlignment="Stretch" Margin="6,0,0,0" BorderThickness="1" Padding="3,1"/>
+        <StackPanel Margin="5">
+            <Label Content="Shortcut Path:"/>
+            <Grid ToolTip="The path at which the shortcuts will be created. Ideally an empty folder inside the start menu, only used for this extension.">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Text="{Binding ShortcutPath, Mode=OneTime}" Grid.Column="0" x:Name="PathTextBox" Margin="5,0,0,0"/>
+                <Button x:Name="SelectFolderButton" Content="Select Folder" Grid.Column="1" HorizontalAlignment="Stretch" Margin="6,0,5,0" BorderThickness="1" Padding="3,1"/>
 
-        </Grid>
-        <StackPanel Margin="0,5" HorizontalAlignment="Left" VerticalAlignment="Top">
-            <CheckBox Content="Installed Only" MinWidth="150" IsChecked="{Binding InstalledOnly}" HorizontalAlignment="Left"/>
-            <CheckBox Content="Force Update" MinWidth="150" IsChecked="{Binding ForceUpdate}" HorizontalAlignment="Left"/>
-            <CheckBox Content="Update on Startup" MinWidth="150" IsChecked="{Binding UpdateOnStartup}" HorizontalAlignment="Left"/>
-            <CheckBox Content="Use PlayAction" MinWidth="150" IsChecked="{Binding UsePlayAction}" HorizontalAlignment="Left"/>
-            <CheckBox Content="Exclude Hidden" MinWidth="150" IsChecked="{Binding ExcludeHidden}" HorizontalAlignment="Left"/>
-            <CheckBox Content="Use Separate Folder For Each Source" MinWidth="150" IsChecked="{Binding SeparateFolders}" HorizontalAlignment="Left"/>
-        </StackPanel>
+            </Grid>
+            
+            <StackPanel Margin="5,5,0,5" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <CheckBox Content="Installed Only" MinWidth="150" IsChecked="{Binding InstalledOnly}" HorizontalAlignment="Left" Margin="0,2" ToolTip="If enabled, only shortcuts to installed games are created and shortcuts to uninstalled games will be removed on update."/>
+                <CheckBox Content="Force Update" MinWidth="150" IsChecked="{Binding ForceUpdate}" HorizontalAlignment="Left" Margin="0,2" ToolTip="If enabled, always recreates shortcuts from scratch when they are updated."/>
+                <CheckBox Content="Update on Startup" MinWidth="150" IsChecked="{Binding UpdateOnStartup}" HorizontalAlignment="Left" Margin="0,2" ToolTip="If enabled, updates shortcuts to games on startup."/>
+                <CheckBox Content="Exclude Hidden" MinWidth="150" IsChecked="{Binding ExcludeHidden}" HorizontalAlignment="Left" Margin="0,2" ToolTip="If enabled, hidden games are ingored when creating shortcuts and shortcuts of hidden games are removed on update."/>
+                <CheckBox Content="Use Separate Folder For Each Source" MinWidth="150" IsChecked="{Binding SeparateFolders}" HorizontalAlignment="Left" Margin="0,2" ToolTip="If enabled, shortcuts will be placed into a subfolder inside the Shortcut Path named after their Source."/>
+            </StackPanel>
 
-        <Label Content="Sources shortcuts are created for:"/>
-        <StackPanel x:Name="SourceSettingsStack" HorizontalAlignment="Left" Margin="0,5" VerticalAlignment="Top"/>
+            <Label Content="Per Source Options:" Margin="0,0,0,5"/>
+            <Grid HorizontalAlignment="Left" Margin="5,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Label Content="Sources" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="0" Grid.Row="0" Margin="2,0"/>
+                <Label Content="Enabled" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1" Grid.Row="0" Margin="2,0"/>
+                <Label Content="Use PlayAction" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="2" Grid.Row="0" Margin="2,0"/>
+                <StackPanel x:Name="SourceNamesStack" HorizontalAlignment="Left" Margin="0,5" VerticalAlignment="Top" Grid.Column="0" Grid.Row="1"/>
+                <StackPanel x:Name="SourceSettingsStack" HorizontalAlignment="Left" Margin="0,5" VerticalAlignment="Top" Grid.Column="1" Grid.Row="1"/>
+                <StackPanel x:Name="PlayActionSettingsStack" HorizontalAlignment="Left" Margin="0,5" VerticalAlignment="Top" Grid.Column="2" Grid.Row="1"/>
+            </Grid>
 
-        <TextBlock x:Name="UpdateTextBlock">
+            <TextBlock x:Name="UpdateTextBlock">
         <Run x:Name="UpdateLabel"></Run>
         <Hyperlink Name="URL" NavigateUri="https://google.de" RequestNavigate="URL_RequestNavigate"><TextBlock x:Name="URLLabel"/></Hyperlink>
         </TextBlock>
