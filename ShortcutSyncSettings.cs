@@ -1,9 +1,12 @@
 ﻿using Playnite.SDK;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Navigation;
 
 namespace ShortcutSync
 {
@@ -26,6 +29,8 @@ namespace ShortcutSync
         public bool SeparateFolders { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
         public Dictionary<string, bool> EnabledPlayActions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
+        public HashSet<Guid> ManuallyCreatedShortcuts { get; set; } = new HashSet<Guid>();
+        public HashSet<Guid> ExcludedGames { get; set; } = new HashSet<Guid>();
 
 
         // Parameterless constructor must exist if you want to use LoadPluginSettings method.
@@ -45,17 +50,11 @@ namespace ShortcutSync
             // LoadPluginSettings returns null if not saved data is available.
             if (savedSettings != null)
             {
-                InstalledOnly = savedSettings.InstalledOnly;
-                ForceUpdate = savedSettings.ForceUpdate;
-                if (savedSettings.ShortcutPath != null)
-                    ShortcutPath = savedSettings.ShortcutPath;
-                if (savedSettings.SourceOptions != null)
-                    SourceOptions = savedSettings.SourceOptions;
-                if (savedSettings.EnabledPlayActions != null)
-                    EnabledPlayActions = savedSettings.EnabledPlayActions;
-                UpdateOnStartup = savedSettings.UpdateOnStartup;
-                ExcludeHidden = savedSettings.ExcludeHidden;
-                SeparateFolders = savedSettings.SeparateFolders;
+                var type = savedSettings.GetType();
+                foreach(var prop in type.GetProperties())
+                {
+                    prop.SetValue(this, prop.GetValue(savedSettings));
+                }
             }
         }
 
@@ -148,6 +147,89 @@ namespace ShortcutSync
                 checkBox.ToolTip = $"If enabled, shortuts try to start games from {playActionOpt.Key} with their native launcher or without any launcher (bypassing Playnite), depending on the existing PlayAction of that game.";
                 plugin.settingsView.PlayActionSettingsStack.Children.Add(checkBox);
             }
+            plugin.settingsView.ManuallyCreatedShortcutListBox.Items.Clear();
+            foreach(var id in ManuallyCreatedShortcuts)
+            {
+                var item = new ListBoxItem();
+                item.Tag = id;
+                item.ContextMenu = new ContextMenu();
+                var menuItem = new MenuItem { Header = "Remove Entry", Tag = id};
+                menuItem.Click += RemoveManual_Click;
+                item.ContextMenu.Items.Add(menuItem);
+                var game = plugin.PlayniteApi.Database.Games.Get(id);
+                item.Content = game == null? "Game not found: " + id.ToString() : $"{game.Name} ({ShortcutSync.GetSourceName(game)})";
+                item.ToolTip = item.Content;
+                plugin.settingsView.ManuallyCreatedShortcutListBox.Items.Add(item);
+            }
+            plugin.settingsView.ExcludedGamesListBox.Items.Clear();
+            foreach (var id in ExcludedGames)
+            {
+                var item = new ListBoxItem();
+                item.Tag = id;
+                item.ContextMenu = new ContextMenu();
+                var menuItem = new MenuItem { Header = "Remove Entry", Tag = id };
+                menuItem.Click += RemoveExcluded_Click;
+                item.ContextMenu.Items.Add(menuItem);
+                var game = plugin.PlayniteApi.Database.Games.Get(id);
+                item.Content = game == null ? "Game not found: " + id.ToString() : $"{game.Name} ({ShortcutSync.GetSourceName(game)})";
+                item.ToolTip = item.Content;
+                plugin.settingsView.ExcludedGamesListBox.Items.Add(item);
+            }
+        }
+
+        private void RemoveExcluded_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            List<Guid> toRemoveId = new List<Guid>();
+            plugin.settingsView.ExcludedGamesListBox.Dispatcher.Invoke(() =>
+            {
+                var menuItem = sender as MenuItem;
+                List<ListBoxItem> toRemove = new List<ListBoxItem>();
+                foreach (ListBoxItem selected in plugin.settingsView.ExcludedGamesListBox.SelectedItems)
+                {
+                    toRemove.Add(selected);
+                }
+                foreach (var item in toRemove)
+                {
+                    item.Dispatcher.Invoke(() => toRemoveId.Add((Guid)item.Tag));
+                }
+                foreach (ListBoxItem item in toRemove)
+                {
+                    plugin.settingsView.ExcludedGamesListBox.Items.Remove(item);
+                }
+            });
+            plugin.RemoveFromExclusionList(from id in toRemoveId select plugin.PlayniteApi.Database.Games.Get(id), this);
+        }
+
+        //private void AddGamesManuallyButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        //{
+        //    List<GenericItemOption> items = (from game in plugin.PlayniteApi.Database.Games select new GenericItemOption(game.Name, game.Id.ToString())).ToList();
+        //    var selected = plugin.PlayniteApi.Dialogs.ChooseItemWithSearch(
+        //        items,
+        //        (filter) => (from item in items where item.Name.ToLower().Contains(filter.ToLower()) select item).ToList()
+        //    );
+        //}
+
+        private void RemoveManual_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            List<Guid> toRemoveId = new List<Guid>();
+            plugin.settingsView.ManuallyCreatedShortcutListBox.Dispatcher.Invoke(() => 
+            {
+                var menuItem = sender as MenuItem;
+                List<ListBoxItem> toRemove = new List<ListBoxItem>();
+                foreach (ListBoxItem selected in plugin.settingsView.ManuallyCreatedShortcutListBox.SelectedItems)
+                {
+                    toRemove.Add(selected);
+                }
+                foreach (var item in toRemove)
+                {
+                    item.Dispatcher.Invoke(() => toRemoveId.Add((Guid)item.Tag));
+                }
+                foreach (ListBoxItem item in toRemove)
+                {
+                    plugin.settingsView.ManuallyCreatedShortcutListBox.Items.Remove(item);
+                }
+            });
+            plugin.RemoveShortcutsManually(toRemoveId, this);
         }
 
         // Callback for the Select Folder Button
