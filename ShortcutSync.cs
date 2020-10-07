@@ -120,7 +120,7 @@ namespace ShortcutSync
         public void AddToExclusionList(IEnumerable<Guid> gameIds, ShortcutSyncSettings settings)
         {
             foreach (var id in gameIds)
-                settings.ExcludedGames.Add(Id);
+                settings.ExcludedGames.Add(id);
             UpdateShortcuts(from id in gameIds where PlayniteApi.Database.Games.Get(id) != null select PlayniteApi.Database.Games.Get(id), settings.Copy());
             SavePluginSettings(settings);
         }
