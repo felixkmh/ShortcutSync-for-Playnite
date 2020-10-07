@@ -97,31 +97,31 @@ namespace ShortcutSync
                     "Exclude selected games from ShortcutSync",
                     () =>
                     {
-                        AddToExclusionList(PlayniteApi.MainView.SelectedGames, settings);
+                        AddToExclusionList(from game in PlayniteApi.MainView.SelectedGames select game.Id, settings);
                     }),
                 new ExtensionFunction(
                     "Remove selected Games from ShortcutSync exclusion list",
                     () =>
                     {
-                        RemoveFromExclusionList(PlayniteApi.MainView.SelectedGames, settings);
+                        RemoveFromExclusionList(from game in PlayniteApi.MainView.SelectedGames select game.Id, settings);
                     })
             };
         }
 #endif
 
-        public void RemoveFromExclusionList(IEnumerable<Game> selectedGames, ShortcutSyncSettings settings)
+        public void RemoveFromExclusionList(IEnumerable<Guid> gameIds, ShortcutSyncSettings settings)
         {
-            foreach (var game in selectedGames)
-                if (game != null) settings.ExcludedGames.Remove(game.Id);
-            UpdateShortcuts(selectedGames, settings.Copy());
+            foreach (var id in gameIds)
+                settings.ExcludedGames.Remove(id);
+            UpdateShortcuts(from id in gameIds where PlayniteApi.Database.Games.Get(id) != null select PlayniteApi.Database.Games.Get(id), settings.Copy());
             SavePluginSettings(settings);
         }
 
-        public void AddToExclusionList(IEnumerable<Game> selectedGames, ShortcutSyncSettings settings)
+        public void AddToExclusionList(IEnumerable<Guid> gameIds, ShortcutSyncSettings settings)
         {
-            foreach (var game in selectedGames)
-                if(game != null) settings.ExcludedGames.Add(game.Id);
-            UpdateShortcuts(selectedGames, settings.Copy());
+            foreach (var id in gameIds)
+                settings.ExcludedGames.Add(Id);
+            UpdateShortcuts(from id in gameIds where PlayniteApi.Database.Games.Get(id) != null select PlayniteApi.Database.Games.Get(id), settings.Copy());
             SavePluginSettings(settings);
         }
 
@@ -161,7 +161,7 @@ namespace ShortcutSync
                     Description = "Exclude selected games from ShortcutSync",
                     MenuSection = "ShortcutSync",
                     Action = context => {
-                        AddToExclusionList(context.Games, settings);
+                        AddToExclusionList(from game in context.Games select game.Id, settings);
                     }
                 },
                 new GameMenuItem
@@ -169,7 +169,7 @@ namespace ShortcutSync
                     Description = "Remove selected Games from ShortcutSync exclusion list",
                     MenuSection = "ShortcutSync",
                     Action = context => {
-                        RemoveFromExclusionList(context.Games, settings);
+                        RemoveFromExclusionList(from game in context.Games select game.Id, settings);
                     }
                 }
             };

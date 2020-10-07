@@ -197,7 +197,7 @@ namespace ShortcutSync
                     plugin.settingsView.ExcludedGamesListBox.Items.Remove(item);
                 }
             });
-            plugin.RemoveFromExclusionList(from id in toRemoveId select plugin.PlayniteApi.Database.Games.Get(id), this);
+            plugin.RemoveFromExclusionList(toRemoveId, this);
         }
 
         //private void AddGamesManuallyButton_Click(object sender, System.Windows.RoutedEventArgs e)
