@@ -346,7 +346,7 @@ namespace ShortcutSync
                     // resize
                     int newWidth = 150;
                     int newHeight = 150;
-                    if (bitmap.Width >= bitmap.Height)
+                    if (bitmap.Width <= bitmap.Height)
                     {
                         float scale = (float)newHeight / bitmap.Height;
                         newWidth = (int)Math.Round(bitmap.Width * scale);
@@ -359,12 +359,18 @@ namespace ShortcutSync
                     Bitmap resized = new Bitmap(newWidth, newHeight);
                     using (Graphics graphics = Graphics.FromImage(resized))
                     {
+                        graphics.RenderingOrigin = new Point(74, 74);
                         if (bitmap.Width <= 64 && bitmap.Height <= 64)
                         {
                             graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
                             graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+                            graphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
+                            graphics.DrawImage(bitmap, new RectangleF(0, 0, 150, 150), new RectangleF(0, 0, bitmap.Width, bitmap.Height), GraphicsUnit.Pixel);
+
+                        } else
+                        {
+                            graphics.DrawImage(bitmap, new Rectangle(0, 0, newWidth, newHeight));
                         }
-                        graphics.DrawImage(bitmap, 0, 0, newWidth, newHeight);
                     }
                     var tileIconPath = Path.Combine(TileIconFolder, $"{TargetObject.Id}.png");
                     resized.Save(tileIconPath, ImageFormat.Png);
@@ -379,27 +385,23 @@ namespace ShortcutSync
         protected static Bitmap ExtractBitmapFromIcon(string iconPath, int desiredWidth = 150, int desiredHeight = 150)
         {
             Bitmap bitmap = null;
-            using (var stream = System.IO.File.OpenRead(iconPath))
+            var i = new System.Drawing.IconLib.MultiIcon();
+            var si = i.Add("icon");
+            si.Load(iconPath);
+            var memStream = new MemoryStream();
+            int maxWidth = 0;
+            foreach (var imag in si)
             {
-                var i = new System.Drawing.IconLib.MultiIcon();
-                i.Load(stream);
-                int maxIndex = 0;
-                int maxWidth = 0;
-                int index = 0;
-                foreach (var imag in i[0])
+                imag.IconImageFormat = IconImageFormat.PNG;
+                if (imag.Size.Width >= desiredWidth && imag.Size.Height >= desiredHeight)
                 {
-                    if (imag.Size.Width >= desiredWidth && imag.Size.Height >= desiredHeight)
-                    {
-                        bitmap = imag.Icon.ToBitmap();
-                        break;
-                    }
-                    if (imag.Size.Width > maxWidth)
-                    {
-                        maxIndex = index;
-                        maxWidth = imag.Size.Width;
-                        bitmap = imag.Icon.ToBitmap();
-                    }
-                    ++index;
+                    return imag.Transparent;
+                }
+                if (imag.Size.Width > maxWidth)
+                {
+                    maxWidth = imag.Size.Width;
+                    bitmap?.Dispose();
+                    bitmap = imag.Transparent;
                 }
             }
             return bitmap;
