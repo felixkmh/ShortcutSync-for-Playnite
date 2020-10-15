@@ -133,7 +133,7 @@ namespace ShortcutSync
                 new GameMenuItem
                 {
                     Description = "Create manual TiledShortcut(s)",
-                    MenuSection = "ShortcutSync",
+                    MenuSection = "@|ShortcutSync",
                     Action = context => 
                     { 
                         backgroundTask = backgroundTask.ContinueWith((_) => AddShortcutsManually(from game in context.Games select game.Id, settings)); 
@@ -142,7 +142,7 @@ namespace ShortcutSync
                 new GameMenuItem
                 {
                     Description = "Remove manual TiledShortcut(s)",
-                    MenuSection = "ShortcutSync",
+                    MenuSection = "@|ShortcutSync",
                     Action = context => 
                     {
                         backgroundTask = backgroundTask.ContinueWith((_) => RemoveShortcutsManually(from game in context.Games select game.Id, settings)); 
@@ -151,7 +151,7 @@ namespace ShortcutSync
                 new GameMenuItem
                 {
                     Description = "Update TiledShortcut(s)",
-                    MenuSection = "ShortcutSync",
+                    MenuSection = "@|ShortcutSync",
                     Action = context => {
                         backgroundTask = backgroundTask.ContinueWith((_) => UpdateShortcuts(context.Games, settings.Copy(), true)); 
                     }
@@ -159,7 +159,7 @@ namespace ShortcutSync
                 new GameMenuItem
                 {
                     Description = "Exclude selected games from ShortcutSync",
-                    MenuSection = "ShortcutSync",
+                    MenuSection = "@|ShortcutSync",
                     Action = context => {
                         AddToExclusionList(from game in context.Games select game.Id, settings);
                     }
@@ -167,7 +167,7 @@ namespace ShortcutSync
                 new GameMenuItem
                 {
                     Description = "Remove selected Games from ShortcutSync exclusion list",
-                    MenuSection = "ShortcutSync",
+                    MenuSection = "@|ShortcutSync",
                     Action = context => {
                         RemoveFromExclusionList(from game in context.Games select game.Id, settings);
                     }
@@ -184,6 +184,13 @@ namespace ShortcutSync
                     Description = "Update All Shortcuts",
                     MenuSection = "ShortcutSync",
                     Action = context => {
+                        PlayniteApi.Dialogs.ActivateGlobalProgress(
+                            (progress) => { 
+                                UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
+                                UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy()); 
+                            }, 
+                            new GlobalProgressOptions("Updating Shortcuts...", false)
+                        );
                         CreateFolderStructure(settings.ShortcutPath);
                         backgroundTask = backgroundTask.ContinueWith((_) => {
                             UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
