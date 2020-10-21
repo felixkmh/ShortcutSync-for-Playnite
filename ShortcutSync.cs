@@ -25,7 +25,7 @@ namespace ShortcutSync
         private Dictionary<Guid, Shortcut<Game>> existingShortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
         private ShortcutSyncSettings previousSettings { get; set; }
 
-        public readonly Version version = new Version(1, 14, 1);
+        public readonly Version version = new Version(1, 14, 2);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
         public enum UpdateStatus
@@ -505,6 +505,9 @@ namespace ShortcutSync
         /// <returns>Whether a valid <see cref="Guid"/> could be parsed.</returns>
         private static bool ExtractIdFromLnkDescription(string description, out Guid gameId)
         {
+            gameId = default;
+            if (string.IsNullOrEmpty(description))
+                return false;
             int startId = -1, endId = -1;
             for (int i = description.Length - 1; i >= 0; --i)
             {
@@ -692,7 +695,7 @@ namespace ShortcutSync
             foreach (var file in files)
             {
                 var lnk = OpenLnk(file);
-                if (lnk != null && ExtractIdFromLnkDescription(lnk.StringData.NameString, out Guid gameId))
+                if (lnk != null && lnk.StringData != null && ExtractIdFromLnkDescription(lnk.StringData.NameString, out Guid gameId))
                 {
                     var game = PlayniteApi.Database.Games.Get(gameId);
                     if (game != null)
