@@ -56,6 +56,7 @@ namespace ShortcutSync
         {
             settings = new ShortcutSyncSettings(this);
             TiledShortcut.FileDatabasePath = Path.Combine(api.Database.DatabasePath, "files");
+            TiledShortcut.DefaultIconPath = Path.Combine(api.Paths.ApplicationPath, "Themes", "Desktop", "Default", "Images", "applogo.png");
         }
 
 #if VERSION7

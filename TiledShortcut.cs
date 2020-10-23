@@ -11,6 +11,7 @@ namespace ShortcutSync
     public class TiledShortcut : Shortcut<Game>
     {
         public static string FileDatabasePath { get; set; } = null;
+        public static string DefaultIconPath { get; set; } = null;
 
         public string LaunchScriptFolder { get; protected set; } = null;
         public string TileIconFolder { get; protected set; } = null;
@@ -325,11 +326,10 @@ namespace ShortcutSync
             string iconPath = GetGameIconPath();
             Color bgColor = Color.DarkGray;
             float brightness = 0.5f;
-            if (!Path.GetFileName(TargetObject.Icon).IsNullOrEmpty()
-                && System.IO.File.Exists(iconPath))
+            if (System.IO.File.Exists(iconPath))
             {
                 Bitmap bitmap = null;
-                if (Path.GetExtension(TargetObject.Icon).ToLower() == ".ico")
+                if (Path.GetExtension(iconPath).ToLower() == ".ico")
                 {
                     bitmap = ExtractBitmapFromIcon(iconPath, 150, 150);
                 }
@@ -372,7 +372,7 @@ namespace ShortcutSync
                             graphics.DrawImage(bitmap, new Rectangle(0, 0, newWidth, newHeight));
                         }
                     }
-                    var tileIconPath = Path.Combine(TileIconFolder, $"{TargetObject.Id}.png");
+                    var tileIconPath = GetTileIconPath();
                     resized.Save(tileIconPath, ImageFormat.Png);
                     brightness = GetLowerThirdBrightness(resized, bgColor);
                     resized.Dispose();
@@ -508,16 +508,15 @@ namespace ShortcutSync
 
         protected string GetGameIconPath()
         {
-            return TargetObject.Icon.IsNullOrEmpty()
-                ? string.Empty
+            var path = Path.Combine(FileDatabasePath, TargetObject.Id.ToString(), Path.GetFileName(TargetObject.Icon??""));
+            return TargetObject.Icon.IsNullOrEmpty() || !File.Exists(path)
+                ? Path.ChangeExtension(DefaultIconPath, ".png")
                 : Path.Combine(FileDatabasePath, TargetObject.Id.ToString(), Path.GetFileName(TargetObject.Icon));
         }
 
         protected string GetShortcutIconPath()
         {
-            return GetGameIconPath().IsNullOrEmpty()
-                ? string.Empty
-                : Path.ChangeExtension(GetGameIconPath(), ".ico");
+            return Path.ChangeExtension(GetGameIconPath(), ".ico");
         }
 
         protected bool LoadManifest(out XmlDocument manifest)
@@ -536,10 +535,11 @@ namespace ShortcutSync
 
         protected bool CreateShortcutIcon()
         {
-            string gameIconPath = GetGameIconPath();
             // Skip if a suitable icon file already exists
-            if (Path.GetExtension(gameIconPath).ToLower() == ".ico")
+            if (File.Exists(GetShortcutIconPath()))
                 return true;
+
+            string gameIconPath = GetGameIconPath();
 
             if (File.Exists(gameIconPath))
             {
