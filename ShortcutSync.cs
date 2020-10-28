@@ -18,7 +18,7 @@ namespace ShortcutSync
     public class ShortcutSync : Plugin
     {
         public static readonly ILogger logger = LogManager.GetLogger();
-        private Task backgroundTask = Task.CompletedTask;
+        private TaskQueue backgroundTasks = new TaskQueue();
         private ShortcutSyncSettings settings { get; set; }
         public ShortcutSyncSettingsView settingsView { get; set; }
         private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; } = new Dictionary<string, IList<Guid>>();
@@ -136,8 +136,8 @@ namespace ShortcutSync
                     Description = "Create manual TiledShortcut(s)",
                     MenuSection = "ShortcutSync",
                     Action = context => 
-                    { 
-                        backgroundTask = backgroundTask.ContinueWith((_) => AddShortcutsManually(from game in context.Games select game.Id, settings)); 
+                    {
+                        backgroundTasks.Queue(() => AddShortcutsManually(from game in context.Games select game.Id, settings)); 
                     }
                 },
                 new GameMenuItem
@@ -146,7 +146,7 @@ namespace ShortcutSync
                     MenuSection = "ShortcutSync",
                     Action = context => 
                     {
-                        backgroundTask = backgroundTask.ContinueWith((_) => RemoveShortcutsManually(from game in context.Games select game.Id, settings)); 
+                         backgroundTasks.Queue(() => RemoveShortcutsManually(from game in context.Games select game.Id, settings)); 
                     }
                 },
                 new GameMenuItem
@@ -154,7 +154,7 @@ namespace ShortcutSync
                     Description = "Update TiledShortcut(s)",
                     MenuSection = "ShortcutSync",
                     Action = context => {
-                        backgroundTask = backgroundTask.ContinueWith((_) => UpdateShortcuts(context.Games, settings.Copy(), true)); 
+                         backgroundTasks.Queue(() => UpdateShortcuts(context.Games, settings.Copy(), true)); 
                     }
                 },
                 new GameMenuItem
@@ -193,7 +193,7 @@ namespace ShortcutSync
                             new GlobalProgressOptions("Updating Shortcuts...", false)
                         );
                         CreateFolderStructure(settings.ShortcutPath);
-                        backgroundTask = backgroundTask.ContinueWith((_) => {
+                        backgroundTasks.Queue(() => {
                             UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
                             UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
                         });
@@ -213,7 +213,7 @@ namespace ShortcutSync
                 {
                     if (FolderIsAccessible(settings.ShortcutPath))
                     {
-                        backgroundTask = backgroundTask.ContinueWith((_) =>
+                        backgroundTasks.Queue(() =>
                         {
                             UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
                         });
@@ -237,7 +237,7 @@ namespace ShortcutSync
 
         private void Settings_OnSettingsChanged()
         {
-            backgroundTask = backgroundTask.ContinueWith((_) =>
+            backgroundTasks.Queue(() =>
             {
                 var settingsSnapshot = settings.Copy();
                 foreach(var playActionOpt in settings.EnabledPlayActions)
@@ -307,7 +307,7 @@ namespace ShortcutSync
         {
             try
             {
-                backgroundTask = backgroundTask.ContinueWith((_) =>
+                backgroundTasks.Queue(() =>
                 {
                     UpdateShortcuts(from update in e.UpdatedItems where SignificantChanges(update.OldData, update.NewData) select update.NewData, settings.Copy(), true);
                 });

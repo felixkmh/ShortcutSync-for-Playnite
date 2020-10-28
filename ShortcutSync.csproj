@@ -108,6 +108,7 @@
       <DependentUpon>ShortcutSyncSettingsView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TaskQueue.cs" />
     <Compile Include="TiledShortcut.cs" />
     <Compile Include="TiledShortcutsPlayAction.cs" />
   </ItemGroup>
