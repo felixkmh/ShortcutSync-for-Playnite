@@ -307,7 +307,10 @@ namespace ShortcutSync
         {
             try
             {
-                UpdateShortcuts(from update in e.UpdatedItems where SignificantChanges(update.OldData, update.NewData) select update.NewData, settings.Copy(), true);
+                backgroundTask.ContinueWith((_) =>
+                {
+                    UpdateShortcuts(from update in e.UpdatedItems where SignificantChanges(update.OldData, update.NewData) select update.NewData, settings.Copy(), true);
+                });
             }
 #pragma warning disable CS0168 // Variable ist deklariert, wird jedoch niemals verwendet
             catch (Exception ex)
