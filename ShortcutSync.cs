@@ -307,7 +307,7 @@ namespace ShortcutSync
         {
             try
             {
-                backgroundTask.ContinueWith((_) =>
+                backgroundTask = backgroundTask.ContinueWith((_) =>
                 {
                     UpdateShortcuts(from update in e.UpdatedItems where SignificantChanges(update.OldData, update.NewData) select update.NewData, settings.Copy(), true);
                 });
