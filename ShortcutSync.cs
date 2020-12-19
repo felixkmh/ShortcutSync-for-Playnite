@@ -12,6 +12,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace ShortcutSync
 {
@@ -172,6 +174,49 @@ namespace ShortcutSync
                     MenuSection = "ShortcutSync",
                     Action = context => {
                         RemoveFromExclusionList(from game in context.Games select game.Id, settings);
+                    }
+                },
+                new GameMenuItem
+                {
+                    Description = "Open visualelementsmanifest.xml",
+                    MenuSection = "ShortcutSync|Edit Shortcut",
+                    Action = context => {
+                        foreach (var game in context.Games)
+                        {
+                            var path = Path.Combine(GetLauncherScriptPath(), game.Id.ToString() + ".visualelementsmanifest.xml");
+                            if (File.Exists(path))
+                            {
+                                Process.Start(Path.Combine(GetLauncherScriptPath(), game.Id.ToString() + ".visualelementsmanifest.xml"));
+                            }
+                        }
+                    }
+                },
+                new GameMenuItem
+                {
+                    Description = "Toggle Text on 150x150 Tile",
+                    MenuSection = "ShortcutSync|Edit Shortcut",
+                    Action = context => {
+                        foreach (var game in context.Games)
+                        {
+                            var path = Path.Combine(GetLauncherScriptPath(), game.Id.ToString() + ".visualelementsmanifest.xml");
+                            if (File.Exists(path))
+                            {
+                                XDocument doc = XDocument.Load(path);
+                                var visualElements = doc.Elements("Application").Elements("VisualElements").First();
+                                if (existingShortcuts.TryGetValue(game.Id, out var sc))
+                                {
+                                    sc.Update(true);
+                                }
+                                if (visualElements.Attribute("ShowNameOnSquare150x150Logo").Value == "on")
+                                {
+                                    visualElements.Attribute("ShowNameOnSquare150x150Logo").Value = "off";
+                                } else
+                                {
+                                    visualElements.Attribute("ShowNameOnSquare150x150Logo").Value = "on";
+                                }
+                                doc.Save(path);
+                            }
+                        }
                     }
                 }
             };
