@@ -25,7 +25,7 @@ namespace ShortcutSync
         private Dictionary<Guid, Shortcut<Game>> existingShortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
         private ShortcutSyncSettings previousSettings { get; set; }
 
-        public readonly Version version = new Version(1, 14, 2);
+        public readonly Version version = new Version(1, 15, 0);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
         public enum UpdateStatus
@@ -57,6 +57,7 @@ namespace ShortcutSync
             settings = new ShortcutSyncSettings(this);
             TiledShortcut.FileDatabasePath = Path.Combine(api.Database.DatabasePath, "files");
             TiledShortcut.DefaultIconPath = Path.Combine(api.Paths.ApplicationPath, "Themes", "Desktop", "Default", "Images", "applogo.png");
+            TiledShortcut.FadeTileEdge = settings.FadeBottom;
         }
 
 #if VERSION7
@@ -266,8 +267,9 @@ namespace ShortcutSync
                         if (!moved) shortcut.Remove();
                     }
                 }
+                TiledShortcut.FadeTileEdge = settingsSnapshot.FadeBottom;
                 UpdateShortcutDicts(settingsSnapshot.ShortcutPath, settingsSnapshot);
-                UpdateShortcuts(PlayniteApi.Database.Games, settingsSnapshot);
+                UpdateShortcuts(PlayniteApi.Database.Games, settingsSnapshot, settingsSnapshot.FadeBottom != previousSettings.FadeBottom);
                 previousSettings = settingsSnapshot;
             });
         }

@@ -5,6 +5,7 @@ using System.Drawing.IconLib;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Xml;
+using System.Numerics;
 
 namespace ShortcutSync
 {
@@ -12,6 +13,7 @@ namespace ShortcutSync
     {
         public static string FileDatabasePath { get; set; } = null;
         public static string DefaultIconPath { get; set; } = null;
+        public static bool FadeTileEdge { get; set; } = false;
 
         public string LaunchScriptFolder { get; protected set; } = null;
         public string TileIconFolder { get; protected set; } = null;
@@ -225,6 +227,16 @@ namespace ShortcutSync
             return Path.Combine(TileIconFolder, GetTileIconName());
         }
 
+        protected string GetTileSmallIconName()
+        {
+            return $"{TargetObject.Id}_70.png";
+        }
+
+        protected string GetTileSmallIconPath()
+        {
+            return Path.Combine(TileIconFolder, GetTileSmallIconName());
+        }
+
         protected string GetLauncherName()
         {
             return $"{TargetObject.Id}.vbs";
@@ -305,7 +317,7 @@ namespace ShortcutSync
                 "ShowNameOnSquare150x150Logo = \"on\"\n" +
                 $"ForegroundText = \"{foregroundTextStyle}\"\n" +
                 $"Square150x150Logo = \"{Constants.ICONFOLDERNAME}\\{TargetObject.Id}.png\"\n" +
-                $"Square70x70Logo = \"{Constants.ICONFOLDERNAME}\\{TargetObject.Id}.png\"/>\n" +
+                $"Square70x70Logo = \"{Constants.ICONFOLDERNAME}\\{TargetObject.Id}_70.png\"/>\n" +
                 "</Application>";
             try
             {
@@ -343,9 +355,9 @@ namespace ShortcutSync
 
                     bgColor = GetDominantColor(bitmap, brightness);
 
-                    // resize
-                    int newWidth = 150;
-                    int newHeight = 150;
+                    // resize 70x70
+                    int newWidth = 70;
+                    int newHeight = 70;
                     if (bitmap.Width <= bitmap.Height)
                     {
                         float scale = (float)newHeight / bitmap.Height;
@@ -359,6 +371,39 @@ namespace ShortcutSync
                     Bitmap resized = new Bitmap(newWidth, newHeight);
                     using (Graphics graphics = Graphics.FromImage(resized))
                     {
+                        graphics.RenderingOrigin = new Point(34, 34);
+                        graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High;
+                        if (bitmap.Width <= 16 && bitmap.Height <= 16)
+                        {
+                            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                            graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+                            graphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
+                            graphics.DrawImage(bitmap, new RectangleF(0, 0, 70, 70), new RectangleF(0, 0, bitmap.Width, bitmap.Height), GraphicsUnit.Pixel);
+                        }
+                        else
+                        {
+                            graphics.DrawImage(bitmap, new Rectangle(0, 0, newWidth, newHeight));
+                        }
+                    }
+                    resized.Save(GetTileSmallIconPath(), ImageFormat.Png);
+                    resized.Dispose();
+
+                    // resize 150x150
+                    newWidth = 150;
+                    newHeight = 150;
+                    if (bitmap.Width <= bitmap.Height)
+                    {
+                        float scale = (float)newHeight / bitmap.Height;
+                        newWidth = (int)Math.Round(bitmap.Width * scale);
+                    }
+                    else
+                    {
+                        float scale = (float)newWidth / bitmap.Width;
+                        newHeight = (int)Math.Round(bitmap.Height * scale);
+                    }
+                    resized = new Bitmap(newWidth, newHeight);
+                    using (Graphics graphics = Graphics.FromImage(resized))
+                    {
                         graphics.RenderingOrigin = new Point(74, 74);
                         if (bitmap.Width <= 64 && bitmap.Height <= 64)
                         {
@@ -366,13 +411,16 @@ namespace ShortcutSync
                             graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
                             graphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
                             graphics.DrawImage(bitmap, new RectangleF(0, 0, 150, 150), new RectangleF(0, 0, bitmap.Width, bitmap.Height), GraphicsUnit.Pixel);
-
                         } else
                         {
                             graphics.DrawImage(bitmap, new Rectangle(0, 0, newWidth, newHeight));
                         }
                     }
                     var tileIconPath = GetTileIconPath();
+                    if (FadeTileEdge)
+                    {
+                        FadeEdge(resized, Edge.Top, 0.5f);
+                    }
                     resized.Save(tileIconPath, ImageFormat.Png);
                     brightness = GetLowerThirdBrightness(resized, bgColor);
                     resized.Dispose();
@@ -380,6 +428,55 @@ namespace ShortcutSync
                 bitmap.Dispose();
             }
             return (bgColor, brightness);
+        }
+
+        protected enum Edge
+        {
+            Bottom,
+            Left,
+            Top,
+            Right
+        }
+
+        protected static void FadeEdge(Bitmap bitmap, Edge edge, float percentage)
+        {
+            Vector2 start = new Vector2();
+            Vector2 dir = new Vector2();
+            float length = 0f;
+            switch (edge)
+            {
+                case Edge.Bottom:
+                    dir.Y = 1;
+                    length = percentage * bitmap.Height;
+                    break;
+                case Edge.Left:
+                    dir.X = 1;
+                    length = percentage * bitmap.Width;
+                    break;
+                case Edge.Top:
+                    start.Y = bitmap.Height;
+                    dir.Y = -1;
+                    length = percentage * bitmap.Height;
+                    break;
+                case Edge.Right:
+                    start.X = bitmap.Width;
+                    dir.X = -1;
+                    length = percentage * bitmap.Width;
+                    break;
+                default:
+                    break;
+            }
+            for(int y = 0; y < bitmap.Height; ++y)
+            {
+                for (int x = 0; x < bitmap.Width; ++x)
+                {
+                    Vector2 toPoint = new Vector2(x, y) - start;
+                    float alpha = Math.Max(0f, Math.Min(1f, Vector2.Dot(dir, toPoint) / length));
+                    Color oldColor = bitmap.GetPixel(x, y);
+                    Color newColor = Color.FromArgb(Math.Min((int)Math.Round(alpha * 255), oldColor.A), oldColor.R, oldColor.G, oldColor.B);
+                    bitmap.SetPixel(x, y, newColor);
+                }
+            }
         }
 
         protected static Bitmap ExtractBitmapFromIcon(string iconPath, int desiredWidth = 150, int desiredHeight = 150)

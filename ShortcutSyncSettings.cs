@@ -27,6 +27,7 @@ namespace ShortcutSync
         public bool ForceUpdate { get; set; } = false;
         public bool ExcludeHidden { get; set; } = false;
         public bool SeparateFolders { get; set; } = false;
+        public bool FadeBottom { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
         public Dictionary<string, bool> EnabledPlayActions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
         public HashSet<Guid> ManuallyCreatedShortcuts { get; set; } = new HashSet<Guid>();
