@@ -186,7 +186,7 @@ namespace ShortcutSync
                             var path = Path.Combine(GetLauncherScriptPath(), game.Id.ToString() + ".visualelementsmanifest.xml");
                             if (File.Exists(path))
                             {
-                                Process.Start(Path.Combine(GetLauncherScriptPath(), game.Id.ToString() + ".visualelementsmanifest.xml"));
+                                Process.Start(path);
                             }
                         }
                     }
