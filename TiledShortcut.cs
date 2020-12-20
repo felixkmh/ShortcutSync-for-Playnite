@@ -315,11 +315,12 @@ namespace ShortcutSync
                 if (ManifestService.Validate(xml))
                 {
                     var manifest = ManifestService.Parse(xml);
-                    if (!File.Exists(manifest.GetSetSquare150x150Logo()))
+                    xml = ManifestService.Create(manifest);
+                    if (!File.Exists(Path.Combine(LaunchScriptFolder, manifest.GetSetSquare150x150Logo())))
                     {
                         manifest.SetSquare150x150LogoOn(Path.Combine(Constants.ICONFOLDERNAME, TargetObject.Id + ".png"));
                     }
-                    if (!File.Exists(manifest.GetSetSquare70x70Logo()))
+                    if (!File.Exists(Path.Combine(LaunchScriptFolder, manifest.GetSetSquare70x70Logo())))
                     {
                         manifest.SetSquare70x70LogoOn(Path.Combine(Constants.ICONFOLDERNAME, TargetObject.Id + "_70.png"));
                     }
