@@ -14,6 +14,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Xml.Linq;
+using KamilSzymborski.VisualElementsManifest;
+using KamilSzymborski.VisualElementsManifest.Extensions;
 
 namespace ShortcutSync
 {
@@ -26,8 +28,7 @@ namespace ShortcutSync
         private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; } = new Dictionary<string, IList<Guid>>();
         private Dictionary<Guid, Shortcut<Game>> existingShortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
         private ShortcutSyncSettings previousSettings { get; set; }
-        private FileSystemWatcher manifestWatcher { get; set; } = null;
-        private int runningEditors = 0;
+        // private FileSystemWatcher manifestWatcher { get; set; } = null;
         public readonly Version version = new Version(1, 15, 1);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
@@ -63,57 +64,6 @@ namespace ShortcutSync
             TiledShortcut.FadeTileEdge = settings.FadeBottom;
         }
 
-#if VERSION7
-        public override IEnumerable<ExtensionFunction> GetFunctions()
-        {
-            return new List<ExtensionFunction>
-            {
-                new ExtensionFunction(
-                    "Update All Shortcuts",
-                    () =>
-                    {
-                        CreateFolderStructure(settings.ShortcutPath);
-                        if (FolderIsAccessible(settings.ShortcutPath))
-                        {
-                            CreateFolderStructure(settings.ShortcutPath);
-                            backgroundTask = backgroundTask.ContinueWith((_) => {
-                                UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
-                                UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
-                            });
-                        } else
-                        {
-                            PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
-                        }
-
-                    }),
-                new ExtensionFunction(
-                    "Create manual TiledShortcut for selected Games",
-                    () =>
-                    {
-                        AddShortcutsManually(from game in PlayniteApi.MainView.SelectedGames select game.Id, settings);
-                    }),
-                new ExtensionFunction(
-                    "Delete manual TiledShortcut for selected Games",
-                    () =>
-                    {
-                        RemoveShortcutsManually(from game in PlayniteApi.MainView.SelectedGames select game.Id, settings);    
-                    }),
-                new ExtensionFunction(
-                    "Exclude selected games from ShortcutSync",
-                    () =>
-                    {
-                        AddToExclusionList(from game in PlayniteApi.MainView.SelectedGames select game.Id, settings);
-                    }),
-                new ExtensionFunction(
-                    "Remove selected Games from ShortcutSync exclusion list",
-                    () =>
-                    {
-                        RemoveFromExclusionList(from game in PlayniteApi.MainView.SelectedGames select game.Id, settings);
-                    })
-            };
-        }
-#endif
-
         public void RemoveFromExclusionList(IEnumerable<Guid> gameIds, ShortcutSyncSettings settings)
         {
             foreach (var id in gameIds)
@@ -130,7 +80,6 @@ namespace ShortcutSync
             SavePluginSettings(settings);
         }
 
-#if VERSION8
         public override List<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
         {
             return new List<GameMenuItem>
@@ -188,16 +137,6 @@ namespace ShortcutSync
                             if (File.Exists(path))
                             {
                                 var p = Process.Start(path);
-                                runningEditors++;
-                                p.Exited += EditorExited;
-                                p.EnableRaisingEvents = true;
-                                if (manifestWatcher == null)
-                                {
-                                    manifestWatcher = new FileSystemWatcher(GetLauncherScriptPath(), "*.visualelementsmanifest.xml");
-                                    manifestWatcher.Changed += ManifestWatcher_Changed;
-                                    manifestWatcher.EnableRaisingEvents = true;
-                                    logger.Debug("Started watching Manifest files");
-                                }
                             }
                         }
                     }
@@ -223,6 +162,30 @@ namespace ShortcutSync
                             SetShortcutTileText(game, false);
                         }
                     }
+                },/*
+                new GameMenuItem
+                {
+                    Description = "Set Custom Tile Image",
+                    MenuSection = "ShortcutSync|Edit Shortcut(s)",
+                    Action = context => {
+                        foreach (var game in context.Games)
+                        {
+                            var path = PlayniteApi.Dialogs.SelectFile("(*.png)|*.png");
+                            if (path.Length > 0)
+                            {
+                                SetShortcutTileImage(game, path);
+                            }
+                        }
+                    }
+                },*/
+                new GameMenuItem
+                {
+                    Description = "Reset Shortcut",
+                    MenuSection = "ShortcutSync|Edit Shortcut(s)",
+                    Action = context => {
+                        RemoveShortcuts(context.Games, settings);
+                        UpdateShortcuts(context.Games, settings);
+                    }
                 }
             };
         }
@@ -231,7 +194,7 @@ namespace ShortcutSync
         {
             if (e.ChangeType == WatcherChangeTypes.Changed)
             {
-                manifestWatcher.EnableRaisingEvents = false;
+                // manifestWatcher.EnableRaisingEvents = false;
                 if (Guid.TryParse(e.Name.Split('.')[0], out var id)) {
                     if (existingShortcuts.TryGetValue(id, out var shortcut))
                     {
@@ -239,25 +202,7 @@ namespace ShortcutSync
                         shortcut.Update(true);
                     }
                 }
-                manifestWatcher.EnableRaisingEvents = true;
-            }
-        }
-
-        private void EditorExited(object sender, EventArgs e)
-        {
-            if (sender is Process p)
-            {
-                p.EnableRaisingEvents = false;
-                p.Dispose();
-                runningEditors--;
-                if (manifestWatcher != null && runningEditors <= 0)
-                {
-                    runningEditors = 0;
-                    manifestWatcher.EnableRaisingEvents = false;
-                    manifestWatcher.Dispose();
-                    manifestWatcher = null;
-                    logger.Debug("Stopped watching Manifest files");
-                }
+                // manifestWatcher.EnableRaisingEvents = true;
             }
         }
 
@@ -274,6 +219,48 @@ namespace ShortcutSync
                 {
                     sc.Update(true);
                 }
+            }
+        }
+
+        private string GetRelativePath(string root, string path)
+        {
+            var rootDirs = root.Split(Path.DirectorySeparatorChar);
+            var pathDirs = path.Split(Path.DirectorySeparatorChar);
+            int i = 0;
+            while (rootDirs[i] == pathDirs[i] && i < rootDirs.Length && i < pathDirs.Length - 1)
+            {
+                i++;
+            }
+            StringBuilder sb = new StringBuilder();
+            for(int j = i; j < rootDirs.Length + 1; ++j)
+            {
+                sb.Append("..");
+                sb.Append(Path.DirectorySeparatorChar);
+            }
+            for (int j = i; j < pathDirs.Length; ++j)
+            {
+                sb.Append(pathDirs[j]);
+                if (j == pathDirs.Length - 1) break;
+                sb.Append(Path.DirectorySeparatorChar);
+            }
+            return sb.ToString();
+        }
+
+        private void SetShortcutTileImage(Game game, string imagePath)
+        {
+            var path = Path.Combine(GetLauncherScriptPath(), game.Id.ToString() + ".visualelementsmanifest.xml");
+            if (File.Exists(path) && File.Exists(imagePath))
+            {
+                var bigPath = Path.Combine(GetLauncherScriptIconsPath(), game.Id + ".png");
+                var smallPath = Path.Combine(GetLauncherScriptIconsPath(), game.Id + "_70.png");
+                if (existingShortcuts.TryGetValue(game.Id, out var sc))
+                {
+                    sc.Update(true);
+                }
+                if (File.Exists(bigPath)) File.Delete(bigPath);
+                if (File.Exists(smallPath)) File.Delete(smallPath);
+                File.Copy(imagePath, bigPath);
+                File.Copy(imagePath, smallPath);
             }
         }
 
@@ -314,7 +301,8 @@ namespace ShortcutSync
                 }
             };
         }
-#endif
+
+
         public override void OnApplicationStarted()
         {
             CreateFolderStructure(settings.ShortcutPath);
@@ -338,6 +326,9 @@ namespace ShortcutSync
                 }
                 PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
                 PlayniteApi.Database.Games.ItemCollectionChanged += Games_ItemCollectionChanged;
+                // manifestWatcher = new FileSystemWatcher(GetLauncherScriptPath(), "*.visualelementsmanifest.xml");
+                // manifestWatcher.Changed += ManifestWatcher_Changed;
+                // manifestWatcher.EnableRaisingEvents = true;
             }
             else
             {
@@ -456,6 +447,10 @@ namespace ShortcutSync
             PlayniteApi.Database.Games.ItemCollectionChanged -= Games_ItemCollectionChanged;
             settings.OnSettingsChanged -= Settings_OnSettingsChanged;
             settings.OnPathChanged -= Settings_OnPathChanged;
+            // manifestWatcher.EnableRaisingEvents = false;
+            // manifestWatcher.Changed -= ManifestWatcher_Changed;
+            // manifestWatcher.Dispose();
+            // manifestWatcher = null;
         }
 
 
