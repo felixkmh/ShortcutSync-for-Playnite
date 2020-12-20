@@ -6,6 +6,9 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Xml;
 using System.Numerics;
+using KamilSzymborski.VisualElementsManifest;
+using KamilSzymborski.VisualElementsManifest.Extensions;
+using KamilSzymborski.VisualElementsManifest.Tools;
 
 namespace ShortcutSync
 {
@@ -154,8 +157,9 @@ namespace ShortcutSync
             bool launcherScriptDeleted = SafeDelete(GetLauncherPath());
             bool manifestDeleted = SafeDelete(GetManifestPath());
             bool iconDeleted = SafeDelete(GetTileIconPath());
+            bool smallIconDeleted = SafeDelete(GetTileSmallIconPath());
 
-            if (iconDeleted && Directory.GetFileSystemEntries(TileIconFolder).Length == 0)
+            if (iconDeleted && smallIconDeleted && Directory.GetFileSystemEntries(TileIconFolder).Length == 0)
                 Directory.Delete(TileIconFolder);
 
             if (launcherScriptDeleted && manifestDeleted && Directory.GetFileSystemEntries(LaunchScriptFolder).Length == 0)
@@ -305,6 +309,29 @@ namespace ShortcutSync
         protected string CreateVisualElementsManifest()
         {
             string fullPath = GetManifestPath();
+            if (File.Exists(fullPath))
+            {
+                var xml = File.ReadAllText(fullPath);
+                if (ManifestService.Validate(xml))
+                {
+                    var manifest = ManifestService.Parse(xml);
+                    if (!File.Exists(manifest.GetSetSquare150x150Logo()))
+                    {
+                        manifest.SetSquare150x150LogoOn(Path.Combine(Constants.ICONFOLDERNAME, TargetObject.Id + ".png"));
+                    }
+                    if (!File.Exists(manifest.GetSetSquare70x70Logo()))
+                    {
+                        manifest.SetSquare70x70LogoOn(Path.Combine(Constants.ICONFOLDERNAME, TargetObject.Id + "_70.png"));
+                    }
+                    var newXml = ManifestService.Create(manifest);
+                    if (newXml != xml)
+                    {
+                        File.WriteAllText(fullPath, newXml);
+                    }
+                    return fullPath;
+                }
+            } 
+
             string foregroundTextStyle = "light";
             string backgroundColorCode = "#000000";
             (var bgColor, var brightness) = CreateTileImage();
@@ -328,7 +355,7 @@ namespace ShortcutSync
                 return fullPath;
             }
             catch (Exception) { }
-
+            
             return string.Empty;
         }
 
@@ -417,9 +444,20 @@ namespace ShortcutSync
                         }
                     }
                     var tileIconPath = GetTileIconPath();
-                    if (FadeTileEdge)
+                    var showTextOnTile = true;
+                    if (File.Exists(GetManifestPath()))
                     {
-                        FadeEdge(resized, Edge.Top, 0.5f);
+                        var manifest = ManifestService.Parse(File.ReadAllText(GetManifestPath()));
+                        showTextOnTile = manifest.IsShowNameOnSquare150x150LogoSetOnOn();
+                    }
+                    if (FadeTileEdge && showTextOnTile)
+                    {
+                        float percentage = 0.25f;
+                        if (TargetObject.Name.Length >= 12 && TargetObject.Name.Split(null).Length > 1)
+                        {
+                            percentage = 0.4f;
+                        }
+                        BlendEdge(resized, Edge.Top, percentage, 1.8f, 0.25f);
                     }
                     resized.Save(tileIconPath, ImageFormat.Png);
                     brightness = GetLowerThirdBrightness(resized, bgColor);
@@ -438,7 +476,7 @@ namespace ShortcutSync
             Right
         }
 
-        protected static void FadeEdge(Bitmap bitmap, Edge edge, float percentage)
+        protected static void BlendEdge(Bitmap bitmap, Edge edge, float percentage, float exponent = 1f, float minAlpha = 0f)
         {
             Vector2 start = new Vector2();
             Vector2 dir = new Vector2();
@@ -472,8 +510,10 @@ namespace ShortcutSync
                 {
                     Vector2 toPoint = new Vector2(x, y) - start;
                     float alpha = Math.Max(0f, Math.Min(1f, Vector2.Dot(dir, toPoint) / length));
+                    alpha = (float)Math.Pow(alpha, exponent);
                     Color oldColor = bitmap.GetPixel(x, y);
-                    Color newColor = Color.FromArgb(Math.Min((int)Math.Round(alpha * 255), oldColor.A), oldColor.R, oldColor.G, oldColor.B);
+                    // Color newColor = oldColor.BlendAlpha(blendColor, alpha);
+                    Color newColor = Color.FromArgb(Math.Min((int)Math.Round(alpha.Map(0, 1, minAlpha, 1) * 255), oldColor.A), oldColor.R, oldColor.G, oldColor.B);
                     bitmap.SetPixel(x, y, newColor);
                 }
             }
