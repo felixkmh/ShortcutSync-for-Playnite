@@ -26,8 +26,9 @@ namespace ShortcutSync
         private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; } = new Dictionary<string, IList<Guid>>();
         private Dictionary<Guid, Shortcut<Game>> existingShortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
         private ShortcutSyncSettings previousSettings { get; set; }
-
-        public readonly Version version = new Version(1, 15, 0);
+        private FileSystemWatcher manifestWatcher { get; set; } = null;
+        private int runningEditors = 0;
+        public readonly Version version = new Version(1, 15, 1);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
         public enum UpdateStatus
@@ -179,47 +180,101 @@ namespace ShortcutSync
                 new GameMenuItem
                 {
                     Description = "Open visualelementsmanifest.xml",
-                    MenuSection = "ShortcutSync|Edit Shortcut",
+                    MenuSection = "ShortcutSync|Edit Shortcut(s)",
                     Action = context => {
                         foreach (var game in context.Games)
                         {
                             var path = Path.Combine(GetLauncherScriptPath(), game.Id.ToString() + ".visualelementsmanifest.xml");
                             if (File.Exists(path))
                             {
-                                Process.Start(path);
+                                var p = Process.Start(path);
+                                runningEditors++;
+                                p.Exited += EditorExited;
+                                p.EnableRaisingEvents = true;
+                                if (manifestWatcher == null)
+                                {
+                                    manifestWatcher = new FileSystemWatcher(GetLauncherScriptPath(), "*.visualelementsmanifest.xml");
+                                    manifestWatcher.Changed += ManifestWatcher_Changed;
+                                    manifestWatcher.EnableRaisingEvents = true;
+                                    logger.Debug("Started watching Manifest files");
+                                }
                             }
                         }
                     }
                 },
                 new GameMenuItem
                 {
-                    Description = "Toggle Text on 150x150 Tile",
-                    MenuSection = "ShortcutSync|Edit Shortcut",
+                    Description = "On",
+                    MenuSection = "ShortcutSync|Edit Shortcut(s)|Show Title on 150x150 Tile",
+                    Action = context => {
+                        foreach (var game in context.Games)
+                        { 
+                            SetShortcutTileText(game, true);
+                        }
+                    }
+                },
+                new GameMenuItem
+                {
+                    Description = "Off",
+                    MenuSection = "ShortcutSync|Edit Shortcut(s)|Show Title on 150x150 Tile",
                     Action = context => {
                         foreach (var game in context.Games)
                         {
-                            var path = Path.Combine(GetLauncherScriptPath(), game.Id.ToString() + ".visualelementsmanifest.xml");
-                            if (File.Exists(path))
-                            {
-                                XDocument doc = XDocument.Load(path);
-                                var visualElements = doc.Elements("Application").Elements("VisualElements").First();
-                                if (existingShortcuts.TryGetValue(game.Id, out var sc))
-                                {
-                                    sc.Update(true);
-                                }
-                                if (visualElements.Attribute("ShowNameOnSquare150x150Logo").Value == "on")
-                                {
-                                    visualElements.Attribute("ShowNameOnSquare150x150Logo").Value = "off";
-                                } else
-                                {
-                                    visualElements.Attribute("ShowNameOnSquare150x150Logo").Value = "on";
-                                }
-                                doc.Save(path);
-                            }
+                            SetShortcutTileText(game, false);
                         }
                     }
                 }
             };
+        }
+
+        private void ManifestWatcher_Changed(object sender, FileSystemEventArgs e)
+        {
+            if (e.ChangeType == WatcherChangeTypes.Changed)
+            {
+                manifestWatcher.EnableRaisingEvents = false;
+                if (Guid.TryParse(e.Name.Split('.')[0], out var id)) {
+                    if (existingShortcuts.TryGetValue(id, out var shortcut))
+                    {
+                        logger.Debug($"Manifest for {shortcut.TargetObject.Name} changed. Update shortcut");
+                        shortcut.Update(true);
+                    }
+                }
+                manifestWatcher.EnableRaisingEvents = true;
+            }
+        }
+
+        private void EditorExited(object sender, EventArgs e)
+        {
+            if (sender is Process p)
+            {
+                p.EnableRaisingEvents = false;
+                p.Dispose();
+                runningEditors--;
+                if (manifestWatcher != null && runningEditors <= 0)
+                {
+                    runningEditors = 0;
+                    manifestWatcher.EnableRaisingEvents = false;
+                    manifestWatcher.Dispose();
+                    manifestWatcher = null;
+                    logger.Debug("Stopped watching Manifest files");
+                }
+            }
+        }
+
+        private void SetShortcutTileText(Game game, bool visible)
+        {
+            var path = Path.Combine(GetLauncherScriptPath(), game.Id.ToString() + ".visualelementsmanifest.xml");
+            if (File.Exists(path))
+            {
+                XDocument doc = XDocument.Load(path);
+                var visualElements = doc.Elements("Application").Elements("VisualElements").First();
+                visualElements.Attribute("ShowNameOnSquare150x150Logo").Value = visible ? "on" : "off";
+                doc.Save(path);
+                if (existingShortcuts.TryGetValue(game.Id, out var sc))
+                {
+                    sc.Update(true);
+                }
+            }
         }
 
         public override List<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
@@ -232,17 +287,29 @@ namespace ShortcutSync
                     MenuSection = "@|ShortcutSync",
                     Action = context => {
                         PlayniteApi.Dialogs.ActivateGlobalProgress(
-                            (progress) => { 
+                            (progress) => {
+                                CreateFolderStructure(settings.ShortcutPath);
                                 UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
-                                UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy()); 
-                            }, 
+                                UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
+                            },
                             new GlobalProgressOptions("Updating Shortcuts...", false)
                         );
-                        CreateFolderStructure(settings.ShortcutPath);
-                        backgroundTasks.Queue(() => {
-                            UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
-                            UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
-                        });
+                    }
+                },
+                new MainMenuItem
+                {
+                    Description = "Re-Create All Shortcuts",
+                    MenuSection = "@|ShortcutSync",
+                    Action = context => {
+                        PlayniteApi.Dialogs.ActivateGlobalProgress(
+                            (progress) => {
+                                CreateFolderStructure(settings.ShortcutPath);
+                                UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
+                                RemoveShortcuts(PlayniteApi.Database.Games, settings.Copy());
+                                UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy(), true, true);
+                            },
+                            new GlobalProgressOptions("Creating Shortcuts...", false)
+                        );
                     }
                 }
             };
@@ -283,9 +350,9 @@ namespace ShortcutSync
 
         private void Settings_OnSettingsChanged()
         {
+            var settingsSnapshot = settings.Copy();
             backgroundTasks.Queue(() =>
             {
-                var settingsSnapshot = settings.Copy();
                 foreach(var playActionOpt in settings.EnabledPlayActions)
                 {
                     if (playActionOpt.Value != previousSettings.EnabledPlayActions[playActionOpt.Key])
@@ -583,11 +650,27 @@ namespace ShortcutSync
             }
         }
 
-        public void UpdateShortcuts(IEnumerable<Game> games, ShortcutSyncSettings settings, bool forceUpdate = false)
+        public void UpdateShortcuts(IEnumerable<Game> games, ShortcutSyncSettings settings, bool forceUpdate = false, bool multithreaded = false)
         {
-            CreateShortcuts(from game in games where ShouldKeepShortcut(game, settings) select game, settings);
-            RemoveShortcuts(from game in games where !ShouldKeepShortcut(game, settings) select game, settings);
-            if (forceUpdate) foreach (var game in games) if (existingShortcuts.ContainsKey(game.Id)) existingShortcuts[game.Id].Update(true);
+            if (multithreaded)
+            {
+                Parallel.ForEach(games, game =>
+                {
+                    if (ShouldKeepShortcut(game, settings))
+                    {
+                        CreateShortcuts(new[] { game }, settings);
+                    } else
+                    {
+                        RemoveShortcuts(new[] { game }, settings);
+                    }
+                    if (forceUpdate) if (existingShortcuts.ContainsKey(game.Id)) existingShortcuts[game.Id].Update(true);
+                });
+            } else
+            {
+                CreateShortcuts(from game in games where ShouldKeepShortcut(game, settings) select game, settings);
+                RemoveShortcuts(from game in games where !ShouldKeepShortcut(game, settings) select game, settings);
+                if (forceUpdate) foreach (var game in games) if (existingShortcuts.ContainsKey(game.Id)) existingShortcuts[game.Id].Update(true);
+            }
         }
 
         public void CreateShortcuts(IEnumerable<Game> games, ShortcutSyncSettings settings)
