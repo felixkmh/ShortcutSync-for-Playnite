@@ -59,9 +59,6 @@ namespace ShortcutSync
         public ShortcutSync(IPlayniteAPI api) : base(api)
         {
             settings = new ShortcutSyncSettings(this);
-            TiledShortcut.FileDatabasePath = Path.Combine(api.Database.DatabasePath, "files");
-            TiledShortcut.DefaultIconPath = Path.Combine(api.Paths.ApplicationPath, "Themes", "Desktop", "Default", "Images", "applogo.png");
-            TiledShortcut.FadeTileEdge = settings.FadeBottom;
         }
 
         public void RemoveFromExclusionList(IEnumerable<Guid> gameIds, ShortcutSyncSettings settings)
@@ -305,6 +302,10 @@ namespace ShortcutSync
 
         public override void OnApplicationStarted()
         {
+            TiledShortcut.FileDatabasePath = Path.Combine(PlayniteApi.Database.DatabasePath, "files");
+            TiledShortcut.DefaultIconPath = Path.Combine(PlayniteApi.Paths.ApplicationPath, "Themes", "Desktop", "Default", "Images", "applogo.png");
+            TiledShortcut.FadeTileEdge = settings.FadeBottom;
+
             CreateFolderStructure(settings.ShortcutPath);
             UpdateShortcutDicts(settings.ShortcutPath,settings);
             if (CreateFolderStructure(settings.ShortcutPath))
