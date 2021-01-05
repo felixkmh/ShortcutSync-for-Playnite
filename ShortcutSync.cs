@@ -372,7 +372,7 @@ namespace ShortcutSync
                 }
                 TiledShortcut.FadeTileEdge = settingsSnapshot.FadeBottom;
                 UpdateShortcutDicts(settingsSnapshot.ShortcutPath, settingsSnapshot);
-                UpdateShortcuts(PlayniteApi.Database.Games, settingsSnapshot, settingsSnapshot.FadeBottom != previousSettings.FadeBottom);
+                UpdateShortcuts(PlayniteApi.Database.Games, settingsSnapshot, settingsSnapshot.FadeBottom != previousSettings.FadeBottom, true);
                 previousSettings = settingsSnapshot;
             });
         }
