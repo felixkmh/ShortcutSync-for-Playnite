@@ -453,12 +453,12 @@ namespace ShortcutSync
                     }
                     if (FadeTileEdge && showTextOnTile)
                     {
-                        float percentage = 0.25f;
+                        float percentage = 0.28f;
                         if (TargetObject.Name.Length >= 12 && TargetObject.Name.Split(null).Length > 1)
                         {
-                            percentage = 0.4f;
+                            percentage = 0.42f;
                         }
-                        BlendEdge(resized, Edge.Top, percentage, 1.8f, 0.25f);
+                        BlendEdge(resized, Edge.Top, percentage, 2.8f, 0.5f);
                     }
                     resized.Save(tileIconPath, ImageFormat.Png);
                     brightness = GetLowerThirdBrightness(resized, bgColor);
