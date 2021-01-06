@@ -1,7 +1,10 @@
 ﻿Name: ShortcutSync
 Author: felixkmh
-Version: 1.15.1
+Version: 1.15.2
 Module: ShortcutSync.dll
 Type: GenericPlugin
 Icon: icon.png
 Id: ShortcutSync_8e48a544-3c67-41f8-9aa0-465627380ec8
+UpdaterConfig:
+  GitHubUser: felixkmh
+  GitHubRepo: ShortcutSync-for-Playnite
