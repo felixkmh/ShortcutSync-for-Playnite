@@ -1,0 +1,11 @@
+AddonId: ShortcutSync_8e48a544-3c67-41f8-9aa0-465627380ec8
+IconUrl: https://github.com/felixkmh/ShortcutSync-for-Playnite/raw/master/source/icon.png
+Type: GenericPlugin
+InstallerManifestUrl: https://github.com/felixkmh/ShortcutSync-for-Playnite/raw/master/InstallerManifest/ShortcutSync_8e48a544-3c67-41f8-9aa0-465627380ec8.yaml
+ShortDescription: Synchronizes start menu shortcuts of games with custom tiles.
+Name: ShortcutSync
+Author: felixkmh
+Links:
+    GitHub: https://github.com/felixkmh/ShortcutSync-for-Playnite
+    Support: https://playnite.link/forum/thread-283.html
+SourceUrl: https://github.com/felixkmh/ShortcutSync-for-Playnite
