@@ -4,7 +4,6 @@ Packages:
     RequiredApiVersion: 5.5.0
     ReleaseDate: 2021-01-07
     PackageUrl: https://github.com/felixkmh/ShortcutSync-for-Playnite/releases/download/v1.15.2/ShortcutSync_1_15_2.pext
-Changelog:
-  1.15.2:
-    - Fixed extension not loading in fullscreen mode.
-    - Added support for "ExtensionUpdater" plugin in yaml file.
+    Changelog:
+      - Fixed extension not loading in fullscreen mode.
+      - Added support for "ExtensionUpdater" plugin in yaml file.
