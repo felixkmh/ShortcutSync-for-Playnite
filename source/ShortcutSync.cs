@@ -338,6 +338,23 @@ namespace ShortcutSync
             settings.OnPathChanged += Settings_OnPathChanged;
             settings.OnSettingsChanged += Settings_OnSettingsChanged;
             previousSettings = settings.Copy();
+
+            // QuickSearch
+
+            QuickSearch.QuickSearchSDK.AddCommand("ShortcutSync", new List<QuickSearch.SearchItems.CommandAction>() 
+            { 
+                new QuickSearch.SearchItems.CommandAction() {Name = "Update", Action = () => 
+                    { PlayniteApi.Dialogs.ActivateGlobalProgress(
+                        (progress) => {
+                            CreateFolderStructure(settings.ShortcutPath);
+                            UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
+                            UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
+                        },
+                        new GlobalProgressOptions("Updating Shortcuts...", false)
+                    );} 
+                },
+                new QuickSearch.SearchItems.CommandAction() {Name = "Settings", Action = () => OpenSettingsView()}
+            }, "Synchronize Shortucts").IconChar = QuickSearch.IconChars.Link;
         }
 
         private void Settings_OnSettingsChanged()
