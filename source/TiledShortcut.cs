@@ -9,6 +9,8 @@ using System.Numerics;
 using KamilSzymborski.VisualElementsManifest;
 using KamilSzymborski.VisualElementsManifest.Extensions;
 using KamilSzymborski.VisualElementsManifest.Tools;
+using System.Text;
+using System.Linq;
 
 namespace ShortcutSync
 {
@@ -677,8 +679,24 @@ namespace ShortcutSync
         protected bool CreateShortcutIcon()
         {
             // Skip if a suitable icon file already exists
-            if (File.Exists(GetShortcutIconPath()))
-                return true;
+            var originalPath = GetShortcutIconPath();
+            if (File.Exists(originalPath))
+            {
+                using (var img = Bitmap.FromFile(GetShortcutIconPath()))
+                {
+                    var extension = ImageCodecInfo.GetImageDecoders().FirstOrDefault(dec => dec.FormatID == img.RawFormat.Guid)?.FilenameExtension.Replace("*",string.Empty).ToLower().Split(';');
+                    if (extension != null)
+                    {
+                        if (!extension.Contains(Path.GetExtension(originalPath).ToLower()))
+                        {
+                            FixWrongIconExtension(originalPath, img);
+                        } else
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
 
             string gameIconPath = GetGameIconPath();
 
@@ -710,6 +728,27 @@ namespace ShortcutSync
             return false;
         }
 
+        private void FixWrongIconExtension(string file, Image img)
+        {
+            if (TargetObject != null)
+            {
+                var extensions = ImageCodecInfo.GetImageDecoders().FirstOrDefault(enc => enc.FormatID == img.RawFormat.Guid)?.FilenameExtension;
+                if (extensions is string)
+                {
+                    var ext = extensions.Split(';').FirstOrDefault()?.ToLower().Replace("*", string.Empty);
+                    if (ext is string)
+                    {
+                        var tempPath = Path.GetTempFileName() + ext;
+                        File.Copy(file, tempPath);
+                        ShortcutSync.Instance.PlayniteApi.Database.RemoveFile(Path.GetFileNameWithoutExtension(file));
+                        var id = ShortcutSync.Instance.PlayniteApi.Database.AddFile(tempPath, TargetObject.Id);
+                        File.Delete(tempPath);
+                        TargetObject.Icon = id;
+                        ShortcutSync.Instance.PlayniteApi.Database.Games.Update(TargetObject);
+                    }
+                }
+            }
+        }
 
         public override bool Move(params string[] paths)
         {
