@@ -691,7 +691,6 @@ namespace ShortcutSync
             var originalPath = GetShortcutIconPath();
             if (File.Exists(originalPath))
             {
-                bool isIcon = false;
                 var bytes = new byte[4];
                 using (var file = File.OpenRead(originalPath))
                 {
