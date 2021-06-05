@@ -375,7 +375,7 @@ namespace ShortcutSync
                 {
                     bitmap = ExtractBitmapFromIcon(iconPath, 150, 150);
                 }
-                else
+                if (bitmap == null)
                 {
                     bitmap = new Bitmap(iconPath);
                 }
@@ -527,23 +527,32 @@ namespace ShortcutSync
             Bitmap bitmap = null;
             var i = new System.Drawing.IconLib.MultiIcon();
             var si = i.Add("icon");
-            si.Load(iconPath);
-            var memStream = new MemoryStream();
+            using (var stream = new FileStream(iconPath, FileMode.Open))
+            {
+                si.Load(stream);
+            }
             int maxWidth = 0;
+            int maxIdx = -1;
+            int idx = 0;
             foreach (var imag in si)
             {
-                imag.IconImageFormat = IconImageFormat.PNG;
-                if (imag.Size.Width >= desiredWidth && imag.Size.Height >= desiredHeight)
+                // imag.IconImageFormat = IconImageFormat.PNG;
+                if (imag.Size.Width >= desiredWidth && imag.Size.Height >= desiredHeight && imag.IconImageFormat == IconImageFormat.PNG)
                 {
                     return imag.Transparent;
                 }
-                if (imag.Size.Width > maxWidth)
+                if (imag.Size.Width > maxWidth && imag.IconImageFormat == IconImageFormat.PNG)
                 {
+                    maxIdx = idx;
                     maxWidth = imag.Size.Width;
-                    bitmap?.Dispose();
-                    bitmap = imag.Transparent;
                 }
+                ++idx;
             }
+            if (maxIdx > -1)
+            {
+                bitmap = si[maxIdx].Transparent;
+            } 
+            
             return bitmap;
         }
 
@@ -682,7 +691,17 @@ namespace ShortcutSync
             var originalPath = GetShortcutIconPath();
             if (File.Exists(originalPath))
             {
-                using (var img = Bitmap.FromFile(GetShortcutIconPath()))
+                bool isIcon = false;
+                var bytes = new byte[4];
+                using (var file = File.OpenRead(originalPath))
+                {
+                    file.Read(bytes, 0, 4);
+                }
+                if (bytes[0] == 0 && bytes[1] == 0 && bytes[2] == 1 && bytes[3] == 0)
+                {
+                    return true;
+                }
+                using (var img = new Bitmap(originalPath))
                 {
                     var extension = ImageCodecInfo.GetImageDecoders().FirstOrDefault(dec => dec.FormatID == img.RawFormat.Guid)?.FilenameExtension.Replace("*",string.Empty).ToLower().Split(';');
                     if (extension != null)
@@ -690,9 +709,6 @@ namespace ShortcutSync
                         if (!extension.Contains(Path.GetExtension(originalPath).ToLower()))
                         {
                             FixWrongIconExtension(originalPath, img);
-                        } else
-                        {
-                            return true;
                         }
                     }
                 }
