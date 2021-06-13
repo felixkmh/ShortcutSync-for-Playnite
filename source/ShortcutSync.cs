@@ -358,9 +358,9 @@ namespace ShortcutSync
                             },
                             new GlobalProgressOptions("Updating Shortcuts...", false)
                         );}
-                    },
-                    new QuickSearch.SearchItems.CommandAction() {Name = "Settings", Action = () => OpenSettingsView()}
+                    }
                 }, "Synchronize Shortucts").IconChar = QuickSearch.IconChars.Link;
+                QuickSearch.QuickSearchSDK.AddPluginSettings("ShortcutSync", settings, OpenSettingsView);
             }
             
         }
