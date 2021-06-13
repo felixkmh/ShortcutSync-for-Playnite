@@ -19,14 +19,20 @@ namespace ShortcutSync
         public event OnSettingsChangedAction OnSettingsChanged;
         private readonly ShortcutSync plugin;
 
+        [QuickSearch.Attributes.GenericOption("Shortcut Path", Description = "Location in which the Shortcuts will be created")]
         public string ShortcutPath { get; set; } =
             System.Environment.ExpandEnvironmentVariables(Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.StartMenu), "PlayniteGames"));
 
+        [QuickSearch.Attributes.GenericOption("Installed Only", Description = "Only create Shortcuts for installed games")]
         public bool InstalledOnly { get; set; } = true;
+        [QuickSearch.Attributes.GenericOption("Update on Startup", Description = "Update Shortcuts when Playnite launches")]
         public bool UpdateOnStartup { get; set; } = false;
         public bool ForceUpdate { get; set; } = false;
+        [QuickSearch.Attributes.GenericOption("Exclude Hidden", Description = "Ignore hidden games when creating Shortcuts")]
         public bool ExcludeHidden { get; set; } = false;
+        [QuickSearch.Attributes.GenericOption("Separate Folders", Description = "Put Shortcuts into separate sub-folders named after their source")]
         public bool SeparateFolders { get; set; } = false;
+        [QuickSearch.Attributes.GenericOption("Fade Bottom of Tiles", Description = "Fade the bottom of the tile images to make titles more readable. Only applied after updating Shoretcuts")]
         public bool FadeBottom { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
         public Dictionary<string, bool> EnabledPlayActions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
