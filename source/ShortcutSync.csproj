@@ -74,6 +74,10 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="QuickSearchSDK">
       <HintPath>..\..\playnite-dev\QuickSearch\QuickSearchSDK\bin\Release\QuickSearchSDK.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="QuickSearchSDK.Attributes">
+      <HintPath>..\..\playnite-dev\QuickSearch\QuickSearchSDK\bin\Debug\QuickSearchSDK.Attributes.dll</HintPath>
     </Reference>
     <Reference Include="securifybv.PropertyStore, Version=0.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\securifybv.PropertyStore.0.1.0\lib\netstandard2.0\securifybv.PropertyStore.dll</HintPath>

@@ -30,7 +30,7 @@ namespace ShortcutSync
         private Dictionary<Guid, Shortcut<Game>> existingShortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
         private ShortcutSyncSettings previousSettings { get; set; }
         // private FileSystemWatcher manifestWatcher { get; set; } = null;
-        public readonly Version version = new Version(1, 15, 3);
+        public readonly Version version = new Version(1, 15, 4);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
         public enum UpdateStatus
@@ -343,20 +343,26 @@ namespace ShortcutSync
 
             // QuickSearch
 
-            QuickSearch.QuickSearchSDK.AddCommand("ShortcutSync", new List<QuickSearch.SearchItems.CommandAction>() 
-            { 
-                new QuickSearch.SearchItems.CommandAction() {Name = "Update", Action = () => 
-                    { PlayniteApi.Dialogs.ActivateGlobalProgress(
-                        (progress) => {
-                            CreateFolderStructure(settings.ShortcutPath);
-                            UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
-                            UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
-                        },
-                        new GlobalProgressOptions("Updating Shortcuts...", false)
-                    );} 
-                },
-                new QuickSearch.SearchItems.CommandAction() {Name = "Settings", Action = () => OpenSettingsView()}
-            }, "Synchronize Shortucts").IconChar = QuickSearch.IconChars.Link;
+            if (AppDomain.CurrentDomain.GetAssemblies()
+                 .Select(asm => asm.GetName())
+                 .Any(asm => asm.Name == "QuickSearchSDK" && asm.Version.Major == 1 && asm.Version.Minor == 3))
+            {
+                QuickSearch.QuickSearchSDK.AddCommand("ShortcutSync", new List<QuickSearch.SearchItems.CommandAction>()
+                {
+                    new QuickSearch.SearchItems.CommandAction() {Name = "Update", Action = () =>
+                        { PlayniteApi.Dialogs.ActivateGlobalProgress(
+                            (progress) => {
+                                CreateFolderStructure(settings.ShortcutPath);
+                                UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
+                                UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
+                            },
+                            new GlobalProgressOptions("Updating Shortcuts...", false)
+                        );}
+                    },
+                    new QuickSearch.SearchItems.CommandAction() {Name = "Settings", Action = () => OpenSettingsView()}
+                }, "Synchronize Shortucts").IconChar = QuickSearch.IconChars.Link;
+            }
+            
         }
 
         private void Settings_OnSettingsChanged()
