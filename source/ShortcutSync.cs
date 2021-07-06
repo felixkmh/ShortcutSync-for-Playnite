@@ -30,7 +30,7 @@ namespace ShortcutSync
         private Dictionary<Guid, Shortcut<Game>> existingShortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
         private ShortcutSyncSettings previousSettings { get; set; }
         // private FileSystemWatcher manifestWatcher { get; set; } = null;
-        public readonly Version version = new Version(1, 15, 4);
+        public readonly Version version = new Version(1, 15, 5);
         public override Guid Id { get; } = Guid.Parse("8e48a544-3c67-41f8-9aa0-465627380ec8");
 
         public enum UpdateStatus
@@ -59,8 +59,8 @@ namespace ShortcutSync
 
         public ShortcutSync(IPlayniteAPI api) : base(api)
         {
-            settings = new ShortcutSyncSettings(this);
             Instance = this;
+            settings = new ShortcutSyncSettings(this);
         }
 
         public void RemoveFromExclusionList(IEnumerable<Guid> gameIds, ShortcutSyncSettings settings)
@@ -136,6 +136,7 @@ namespace ShortcutSync
                             if (File.Exists(path))
                             {
                                 var p = Process.Start(path);
+                                p.Dispose();
                             }
                         }
                     }
@@ -304,8 +305,8 @@ namespace ShortcutSync
 
         public override void OnApplicationStarted()
         {
-            TiledShortcut.FileDatabasePath = Path.Combine(PlayniteApi.Database.DatabasePath, "files");
-            TiledShortcut.DefaultIconPath = Path.Combine(PlayniteApi.Paths.ApplicationPath, "Themes", "Desktop", "Default", "Images", "applogo.png");
+            // TiledShortcut.FileDatabasePath = Path.Combine(PlayniteApi.Database.DatabasePath, "files");
+            // TiledShortcut.DefaultIconPath = Path.Combine(PlayniteApi.Paths.ApplicationPath, "Themes", "Desktop", "Default", "Images", "applogo.png");
             TiledShortcut.FadeTileEdge = settings.FadeBottom;
 
             CreateFolderStructure(settings.ShortcutPath);
@@ -677,24 +678,36 @@ namespace ShortcutSync
             PlayniteApi.Database.Games.ItemCollectionChanged -= Games_ItemCollectionChanged;
             try
             {
-                if (multithreaded)
-                {
-                    Parallel.ForEach(games, game =>
-                    {
-                        if (ShouldKeepShortcut(game, settings))
-                        {
-                            CreateShortcuts(new[] { game }, settings);
-                        } else
-                        {
-                            RemoveShortcuts(new[] { game }, settings);
-                        }
-                        if (forceUpdate) if (existingShortcuts.ContainsKey(game.Id)) existingShortcuts[game.Id].Update(true);
-                    });
-                } else
+                //if (multithreaded)
+                //{
+                //    Parallel.ForEach(games, game =>
+                //    {
+                //        if (ShouldKeepShortcut(game, settings))
+                //        {
+                //            CreateShortcuts(new[] { game }, settings);
+                //        } else
+                //        {
+                //            RemoveShortcuts(new[] { game }, settings);
+                //        }
+                //        if (forceUpdate) if (existingShortcuts.ContainsKey(game.Id)) existingShortcuts[game.Id].Update(true);
+                //    });
+                //} else
                 {
                     CreateShortcuts(from game in games where ShouldKeepShortcut(game, settings) select game, settings);
                     RemoveShortcuts(from game in games where !ShouldKeepShortcut(game, settings) select game, settings);
-                    if (forceUpdate) foreach (var game in games) if (existingShortcuts.ContainsKey(game.Id)) existingShortcuts[game.Id].Update(true);
+                    if (forceUpdate) {
+                        foreach (var game in games) {
+                            try
+                            {
+                                if (existingShortcuts.ContainsKey(game.Id)) 
+                                    existingShortcuts[game.Id].Update(true);
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.Error(ex, $"Failed to Update Shortcut for \"{game.Name}\"");
+                            }
+                        }
+                    }
                 }
             } catch (Exception) { }
             PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
@@ -718,7 +731,9 @@ namespace ShortcutSync
                         }
                     }
                 }
-                catch (Exception) { }
+                catch (Exception ex) {
+                    logger.Error(ex, $"Failed to Update Shortcut for \"{game.Name}\"");
+                }
             }
             foreach (var game in games)
             {
@@ -790,11 +805,24 @@ namespace ShortcutSync
                         }
                     }
                 }
-                catch (Exception) { }
+                catch (Exception ex) {
+                    logger.Error(ex, $"Failed to Update Shortcut for \"{game.Name}\"");
+                }
             }
             // Stopwatch stopwatch = new Stopwatch();
             // stopwatch.Start();
-            Parallel.ForEach(games, game => { if (existingShortcuts.ContainsKey(game.Id)) existingShortcuts[game.Id].CreateOrUpdate(); });
+            foreach(var game in games)
+            {
+                try
+                {
+                    if (existingShortcuts.ContainsKey(game.Id)) 
+                        existingShortcuts[game.Id].CreateOrUpdate();
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, $"Failed to Update Shortcut for \"{game.Name}\"");
+                }
+            }
             // stopwatch.Stop();
             // PlayniteApi.Dialogs.ShowMessage($"Created {Shortcuts.Count} shortcuts in {stopwatch.ElapsedMilliseconds / 1000f} seconds.");
             //foreach (var game in games)

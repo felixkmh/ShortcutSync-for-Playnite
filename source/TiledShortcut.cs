@@ -16,8 +16,8 @@ namespace ShortcutSync
 {
     public class TiledShortcut : Shortcut<Game>
     {
-        public static string FileDatabasePath { get; set; } = null;
-        public static string DefaultIconPath { get; set; } = null;
+        public static string FileDatabasePath => Path.Combine(ShortcutSync.Instance.PlayniteApi.Database.DatabasePath, "files");
+        public static string DefaultIconPath => Path.Combine(ShortcutSync.Instance.PlayniteApi.Paths.ApplicationPath, "Themes", "Desktop", "Default", "Images", "applogo.png");
         public static bool FadeTileEdge { get; set; } = false;
 
         public string LaunchScriptFolder { get; protected set; } = null;
@@ -660,10 +660,21 @@ namespace ShortcutSync
 
         protected string GetGameIconPath()
         {
-            var path = Path.Combine(FileDatabasePath, TargetObject.Id.ToString(), Path.GetFileName(TargetObject.Icon??""));
-            return TargetObject.Icon.IsNullOrEmpty() || !File.Exists(path)
-                ? Path.ChangeExtension(DefaultIconPath, ".png")
-                : Path.Combine(FileDatabasePath, TargetObject.Id.ToString(), Path.GetFileName(TargetObject.Icon));
+            var databasePath = TargetObject.Icon;
+            if (!string.IsNullOrEmpty(databasePath))
+            {
+                var path = ShortcutSync.Instance.PlayniteApi.Database.GetFullFilePath(TargetObject.Icon);
+                if (databasePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    // URL: TODO
+
+                } else if (File.Exists(path))
+                {
+                    // File
+                    return path;
+                }
+            }
+            return Path.ChangeExtension(DefaultIconPath, ".png");
         }
 
         protected string GetShortcutIconPath()
