@@ -139,7 +139,7 @@ namespace ShortcutSync
                 checkBox.ToolTip = $"If enabled, shortcuts to games from {srcOpt.Key} are created and maintained on update.";
                 container.Children.Add(checkBox);
             }
-            plugin.settingsView.PlayActionSettingsStack.Children.Clear();
+            //plugin.settingsView.PlayActionSettingsStack.Children.Clear();
             foreach (var playActionOpt in EnabledPlayActions)
             {
                 // Add checkboxes and set some properties
@@ -152,7 +152,7 @@ namespace ShortcutSync
                 checkBox.Height = 20;
                 checkBox.Tag = playActionOpt.Key;
                 checkBox.ToolTip = $"If enabled, shortuts try to start games from {playActionOpt.Key} with their native launcher or without any launcher (bypassing Playnite), depending on the existing PlayAction of that game.";
-                plugin.settingsView.PlayActionSettingsStack.Children.Add(checkBox);
+                //plugin.settingsView.PlayActionSettingsStack.Children.Add(checkBox);
             }
             plugin.settingsView.ManuallyCreatedShortcutListBox.Items.Clear();
             foreach(var id in ManuallyCreatedShortcuts)
@@ -262,11 +262,11 @@ namespace ShortcutSync
             {
                 SourceOptions[checkBox.Tag as string] = (bool)checkBox.IsChecked;
             }
-            container = plugin.settingsView.PlayActionSettingsStack;
-            foreach (CheckBox checkBox in container.Children)
-            {
-                EnabledPlayActions[checkBox.Tag as string] = (bool)checkBox.IsChecked;
-            }
+            //container = plugin.settingsView.PlayActionSettingsStack;
+            //foreach (CheckBox checkBox in container.Children)
+            //{
+            //    EnabledPlayActions[checkBox.Tag as string] = (bool)checkBox.IsChecked;
+            //}
             // Code executed when user decides to confirm changes made since BeginEdit was called.
             plugin.SavePluginSettings(this);
             OnSettingsChanged?.Invoke();

@@ -26,28 +26,28 @@ namespace ShortcutSync
         {
             string fullPath = GetLauncherPath();
             string script = "";
-            if (TargetObject.Source != null && TargetObject.Source.Name == "Xbox")
-            {
-                script =
-                "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
-                $"WshShell.Run \"{@"explorer.exe"}\" & \" \" & \"{Arguments}\" , 1\n" +
-                "Set WshShell=Nothing";
-            }
-            else if (TargetObject.PlayAction.Type == GameActionType.URL)
-            {
-                script =
-                "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
-                $"WshShell.Run \"{TargetObject.PlayAction.Path}\", 1\n" +
-                "Set WshShell=Nothing";
-            }
-            else
-            {
-                script =
-                "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
-                $"WshShell.CurrentDirectory = \"{WorkingDir}\"\n" +
-                $"Call WshShell.Run (\"{TargetPath}\" & \" \" & \"{Arguments}\" , 1, false)\n" +
-                "Set WshShell=Nothing";
-            }
+            //if (TargetObject.Source != null && TargetObject.Source.Name == "Xbox")
+            //{
+            //    script =
+            //    "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
+            //    $"WshShell.Run \"{@"explorer.exe"}\" & \" \" & \"{Arguments}\" , 1\n" +
+            //    "Set WshShell=Nothing";
+            //}
+            //else if (TargetObject.PlayAction.Type == GameActionType.URL)
+            //{
+            //    script =
+            //    "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
+            //    $"WshShell.Run \"{TargetObject.PlayAction.Path}\", 1\n" +
+            //    "Set WshShell=Nothing";
+            //}
+            //else
+            //{
+            //    script =
+            //    "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
+            //    $"WshShell.CurrentDirectory = \"{WorkingDir}\"\n" +
+            //    $"Call WshShell.Run (\"{TargetPath}\" & \" \" & \"{Arguments}\" , 1, false)\n" +
+            //    "Set WshShell=Nothing";
+            //}
 
 
             try

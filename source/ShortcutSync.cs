@@ -16,10 +16,11 @@ using System.Diagnostics;
 using System.Xml.Linq;
 using KamilSzymborski.VisualElementsManifest;
 using KamilSzymborski.VisualElementsManifest.Extensions;
+using Playnite.SDK.Events;
 
 namespace ShortcutSync
 {
-    public class ShortcutSync : Plugin
+    public class ShortcutSync : GenericPlugin
     {
         public static readonly ILogger logger = LogManager.GetLogger();
         public static ShortcutSync Instance { get; private set; }
@@ -61,6 +62,7 @@ namespace ShortcutSync
         {
             Instance = this;
             settings = new ShortcutSyncSettings(this);
+            Properties = new GenericPluginProperties { HasSettings = true };
         }
 
         public void RemoveFromExclusionList(IEnumerable<Guid> gameIds, ShortcutSyncSettings settings)
@@ -79,7 +81,7 @@ namespace ShortcutSync
             SavePluginSettings(settings);
         }
 
-        public override List<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
+        public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
         {
             return new List<GameMenuItem>
             {
@@ -264,7 +266,7 @@ namespace ShortcutSync
             }
         }
 
-        public override List<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
+        public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
         {
             return new List<MainMenuItem>
             {
@@ -303,7 +305,7 @@ namespace ShortcutSync
         }
 
 
-        public override void OnApplicationStarted()
+        public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             // TiledShortcut.FileDatabasePath = Path.Combine(PlayniteApi.Database.DatabasePath, "files");
             // TiledShortcut.DefaultIconPath = Path.Combine(PlayniteApi.Paths.ApplicationPath, "Themes", "Desktop", "Default", "Images", "applogo.png");
@@ -467,7 +469,7 @@ namespace ShortcutSync
             return false;
         }
 
-        public override void OnApplicationStopped()
+        public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
             // Unsubscribe from library change events.
             PlayniteApi.Database.Games.ItemUpdated -= Games_ItemUpdated;
@@ -766,32 +768,6 @@ namespace ShortcutSync
                     }
                     else
                     {
-                        if (settings.EnabledPlayActions.ContainsKey(GetSourceName(game)) && settings.EnabledPlayActions[GetSourceName(game)] && game.PlayAction != null)
-                        {
-                            string workingDirectory = PlayniteApi.ExpandGameVariables(game, game.PlayAction.WorkingDir);
-                            string targetPath = PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path);
-                            string arguments = game.PlayAction.Arguments;
-                            if (game.PlayAction.Type == GameActionType.Emulator)
-                            {
-                                var profile = PlayniteApi.Database.Emulators.Get(game.PlayAction.EmulatorId).Profiles.First(p => p.Id == game.PlayAction.EmulatorProfileId);
-                                targetPath = profile.Executable;
-                                workingDirectory = profile.WorkingDirectory;
-                                arguments = "\"" + PlayniteApi.ExpandGameVariables(game, profile.Arguments) + "\"";
-                            } 
-                            existingShortcuts.Add(game.Id,
-                                new TiledShortcutsPlayAction
-                                (
-                                    targetGame: game,
-                                    shortcutPath: GetShortcutPath(game, settings.ShortcutPath, hasDuplicates, settings.SeparateFolders),
-                                    launchScriptFolder: GetLauncherScriptPath(),
-                                    tileIconFolder: GetLauncherScriptIconsPath(),
-                                    workingDirectory,
-                                    targetPath,
-                                    arguments
-                                )
-                            );
-                        }
-                        else
                         {
                             existingShortcuts.Add(game.Id,
                                 new TiledShortcut
@@ -902,24 +878,6 @@ namespace ShortcutSync
                         {
                             shortcut.Remove();
                         }
-                        if (settings.EnabledPlayActions.ContainsKey(GetSourceName(game)) && settings.EnabledPlayActions[GetSourceName(game)] && game.PlayAction != null)
-                        {
-                            string workingDirectory = PlayniteApi.ExpandGameVariables(game, game.PlayAction.WorkingDir);
-                            string targetPath = PlayniteApi.ExpandGameVariables(game, game.PlayAction.Path);
-                            existingShortcuts.Add(game.Id,
-                                new TiledShortcutsPlayAction
-                                (
-                                    targetGame: game,
-                                    shortcutPath: file,
-                                    launchScriptFolder: GetLauncherScriptPath(),
-                                    tileIconFolder: GetLauncherScriptIconsPath(),
-                                    workingDirectory,
-                                    targetPath,
-                                    game.PlayAction.Arguments
-                                )
-                            );
-                        }
-                        else
                         {
                             existingShortcuts[game.Id] = new TiledShortcut(game, file, GetLauncherScriptPath(), GetLauncherScriptIconsPath());
                         }
