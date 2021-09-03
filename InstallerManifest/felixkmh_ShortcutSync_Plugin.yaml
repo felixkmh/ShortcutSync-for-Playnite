@@ -1,4 +1,4 @@
-AddonId: ShortcutSync_8e48a544-3c67-41f8-9aa0-465627380ec8
+AddonId: felixkmh_ShortcutSync_Plugin
 Packages:
   - Version: 1.15.2
     RequiredApiVersion: 5.5.0
