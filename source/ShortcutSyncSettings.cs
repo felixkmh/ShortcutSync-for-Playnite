@@ -68,22 +68,6 @@ namespace ShortcutSync
         public void BeginEdit()
         {
             plugin.settingsView.UpdateTextBlock.Visibility = System.Windows.Visibility.Collapsed;
-            plugin.UpdateAvailable().ContinueWith((task) =>
-            {
-                var updateAvailable = task.Result.Available;
-                var url = task.Result.Url;
-                var latestVersion = task.Result.LatestVersion;
-                plugin.settingsView.Dispatcher.Invoke(() =>
-                {
-                    if (updateAvailable)
-                    {
-                        plugin.settingsView.UpdateTextBlock.Visibility = System.Windows.Visibility.Visible;
-                        plugin.settingsView.UpdateLabel.Text = $"New version {latestVersion} available at:\n";
-                        plugin.settingsView.URL.NavigateUri = new Uri(url);
-                        plugin.settingsView.URLLabel.Text = url;
-                    }
-                });
-            });
 
             var bt = plugin.settingsView.SelectFolderButton;
             bt.Click += Bt_Click;
