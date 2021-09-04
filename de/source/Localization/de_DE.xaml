@@ -1,0 +1,57 @@
+﻿<?xml version="1.0"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+	<!--Menu Entries-->
+    <sys:String x:Key="LOC_SHS_UpdateAllShortcuts">Alle Verknüpfungen aktualisieren</sys:String>
+    <sys:String x:Key="LOC_SHS_RecreateAllShortcuts">Alle Verknüpfungen erneuern</sys:String>
+    <sys:String x:Key="LOC_SHS_Update">Aktualisieren</sys:String>
+
+    <!--Message Boxes-->
+    <sys:String x:Key="LOC_SHS_UpdatingShortcuts">Aktualisiere Verknüpfungen...</sys:String>
+    <sys:String x:Key="LOC_SHS_CreatingShortcuts">Erstelle Verknüpfungen...</sys:String>
+    <sys:String x:Key="LOC_SHS_ErrorFolderLabel">Kein Zugriff auf Verzeichnis.</sys:String>
+    <sys:String x:Key="LOC_SHS_ErrorFolderMessage">Auf das Verzeichnis &quot;{0}&quot; kann nicht zugegriffen werden. Wähle bitte ein anderes. </sys:String>
+
+    <!--GameMenu Entries-->
+    <sys:String x:Key="LOC_SHS_CreateManual">Erstelle Kachelverknüpfung(en) manuell</sys:String>
+    <sys:String x:Key="LOC_SHS_RemoveManual">Entferne manuelle Kachelverknüpfung(en)</sys:String>
+    <sys:String x:Key="LOC_SHS_UpdateSelected">Aktualisiere Kachelverknüpfung(en)</sys:String>
+    <sys:String x:Key="LOC_SHS_AddToExclusionList">Schließe gewählte Spiele von ShortcutSync aus</sys:String>
+    <sys:String x:Key="LOC_SHS_RemoveFromExclusionList">Schließe gewählte Spiele nicht mehr von ShortcutSync aus</sys:String>
+    <sys:String x:Key="LOC_SHS_OpenManifest">Öffne visualelementsmanifest.xml</sys:String>
+    <sys:String x:Key="LOC_SHS_ShowTitleOnTile">Zeige Titel auf 150x150 Kachel</sys:String>
+    <sys:String x:Key="LOC_SHS_EditShortcuts">Bearbeite Verknüpfung(en)</sys:String>
+    <sys:String x:Key="LOC_SHS_On">An</sys:String>
+    <sys:String x:Key="LOC_SHS_Off">Aus</sys:String>
+    <sys:String x:Key="LOC_SHS_ResetShortcuts">Verknüpfung(en) zurücksetzen</sys:String>
+	
+	<!--Settings-->
+	<!--Labels-->
+	<sys:String x:Key="LOC_SHS_ShortcutPath">Verknüpfungs-Pfad:</sys:String>
+    <sys:String x:Key="LOC_SHS_InstalledOnly">Nur Installierte</sys:String>
+    <sys:String x:Key="LOC_SHS_ForceUpdate">Erzwinge Erneuerung</sys:String>
+    <sys:String x:Key="LOC_SHS_UpdateOnStartUp">Aktualisiere beim Start</sys:String>
+    <sys:String x:Key="LOC_SHS_ExcludeHidden">Schließe versteckte aus</sys:String>
+    <sys:String x:Key="LOC_SHS_SeparateFolders">Benutze ein Verzeichnis pro Quelle:</sys:String>
+    <sys:String x:Key="LOC_SHS_FadeEdges">Blende Unterkante von Kachelbildern aus</sys:String>
+    <sys:String x:Key="LOC_SHS_PerSourceOptions"></sys:String>
+    <sys:String x:Key="LOC_SHS_Sources"></sys:String>
+    <sys:String x:Key="LOC_SHS_Enabled"></sys:String>
+    <sys:String x:Key="LOC_SHS_ManualShortcuts"></sys:String>
+    <sys:String x:Key="LOC_SHS_ExcludedGames"></sys:String>
+    <sys:String x:Key="LOC_SHS_RemoveEntry"></sys:String>
+    <sys:String x:Key="LOC_SHS_GameNotFound"></sys:String>
+
+    <!--Tool Tips-->
+    <sys:String x:Key="LOC_SHS_ShortcutPathTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_ForceUpdateTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_UpdateOnStartUpTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_ExcludeHiddenTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_FadeEdgesTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_EnabledTooltip"></sys:String>
+
+    <!--Buttons-->
+    <sys:String x:Key="LOC_SHS_SelectShortcutPathButton"></sys:String>
+	
+</ResourceDictionary>
