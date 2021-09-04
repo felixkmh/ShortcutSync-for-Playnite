@@ -33,7 +33,7 @@
     <sys:String x:Key="LOC_SHS_ExcludeHidden">Schließe versteckte aus</sys:String>
     <sys:String x:Key="LOC_SHS_SeparateFolders">Benutze ein Verzeichnis pro Quelle:</sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdges">Blende Unterkante von Kachelbildern aus</sys:String>
-    <sys:String x:Key="LOC_SHS_PerSourceOptions"></sys:String>
+    <sys:String x:Key="LOC_SHS_PerSourceOptions">Quellen-Optionen:</sys:String>
     <sys:String x:Key="LOC_SHS_Sources"></sys:String>
     <sys:String x:Key="LOC_SHS_Enabled"></sys:String>
     <sys:String x:Key="LOC_SHS_ManualShortcuts"></sys:String>
