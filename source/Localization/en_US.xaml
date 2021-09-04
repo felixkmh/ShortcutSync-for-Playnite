@@ -34,8 +34,8 @@
     <sys:String x:Key="LOC_SHS_SeparateFolders">Use Separate Folder For Each Source:</sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdges">Fade Edge of Tile Images</sys:String>
     <sys:String x:Key="LOC_SHS_PerSourceOptions">Per Source Options:</sys:String>
-    <sys:String x:Key="LOC_SHS_Sources">Quellen</sys:String>
-    <sys:String x:Key="LOC_SHS_Enabled">Aktiviert</sys:String>
+    <sys:String x:Key="LOC_SHS_Sources">Sources</sys:String>
+    <sys:String x:Key="LOC_SHS_Enabled">Enabled</sys:String>
     <sys:String x:Key="LOC_SHS_ManualShortcuts">Manual Shortcuts:</sys:String>
     <sys:String x:Key="LOC_SHS_ExcludedGames">Excluded Games:</sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry">Remove Entry</sys:String>
