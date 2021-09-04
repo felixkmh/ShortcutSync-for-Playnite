@@ -33,7 +33,7 @@
     <sys:String x:Key="LOC_SHS_ExcludeHidden">Exclude Hidden</sys:String>
     <sys:String x:Key="LOC_SHS_SeparateFolders">Use Separate Folder For Each Source:</sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdges">Fade Edge of Tile Images</sys:String>
-    <sys:String x:Key="LOC_SHS_PerSourceOptions">Shortcut Path:</sys:String>
+    <sys:String x:Key="LOC_SHS_PerSourceOptions">Per Source Options:</sys:String>
     <sys:String x:Key="LOC_SHS_Sources">Quellen</sys:String>
     <sys:String x:Key="LOC_SHS_Enabled">Aktiviert</sys:String>
     <sys:String x:Key="LOC_SHS_ManualShortcuts">Manual Shortcuts:</sys:String>
