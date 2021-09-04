@@ -7,24 +7,24 @@
              d:DesignHeight="400" d:DesignWidth="600">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalContentAlignment="Stretch">
         <StackPanel Margin="5">
-            <Label Content="Shortcut Path:"/>
-            <Grid ToolTip="The path at which the shortcuts will be created. Ideally an empty folder inside the start menu, only used for this extension.">
+            <Label Content="{DynamicResource LOC_SHS_ShortcutPath}"/>
+            <Grid ToolTip="{DynamicResource LOC_SHS_ShortcutPathTooltip}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox Text="{Binding ShortcutPath, Mode=OneTime}" Grid.Column="0" x:Name="PathTextBox" Margin="5,0,0,0" UseLayoutRounding="False" TextWrapping="Wrap"/>
-                <Button x:Name="SelectFolderButton" Content="Select Folder" Grid.Column="1" HorizontalAlignment="Stretch" Margin="6,0,5,0" BorderThickness="1" Padding="3,1"/>
+                <Button x:Name="SelectFolderButton" Content="{DynamicResource LOC_SHS_SelectShortcutPathButton}" Grid.Column="1" HorizontalAlignment="Stretch" Margin="6,0,5,0" BorderThickness="1" Padding="3,1"/>
 
             </Grid>
             
             <StackPanel Margin="5,5,0,5" HorizontalAlignment="Left" VerticalAlignment="Top">
-                <CheckBox Content="Installed Only" MinWidth="150" IsChecked="{Binding InstalledOnly}" HorizontalAlignment="Left" Margin="0,2" ToolTip="If enabled, only shortcuts to installed games are created and shortcuts to uninstalled games will be removed on update."/>
-                <CheckBox Content="Force Update" MinWidth="150" IsChecked="{Binding ForceUpdate}" HorizontalAlignment="Left" Margin="0,2" ToolTip="If enabled, always recreates shortcuts from scratch when they are updated."/>
-                <CheckBox Content="Update on Startup" MinWidth="150" IsChecked="{Binding UpdateOnStartup}" HorizontalAlignment="Left" Margin="0,2" ToolTip="If enabled, updates shortcuts to games on startup."/>
-                <CheckBox Content="Exclude Hidden" MinWidth="150" IsChecked="{Binding ExcludeHidden}" HorizontalAlignment="Left" Margin="0,2" ToolTip="If enabled, hidden games are ingored when creating shortcuts and shortcuts of hidden games are removed on update."/>
-                <CheckBox Content="Use Separate Folder For Each Source" MinWidth="150" IsChecked="{Binding SeparateFolders}" HorizontalAlignment="Left" Margin="0,2" ToolTip="If enabled, shortcuts will be placed into a subfolder inside the Shortcut Path named after their Source."/>
-                <CheckBox Content="Fade Edge of Tile Images" MinWidth="150" IsChecked="{Binding FadeBottom}" HorizontalAlignment="Left" Margin="0,2" ToolTip="If enabled, the bottom of the tile background images are faded out to improve readability of the title, if the title is visible."/>
+                <CheckBox Content="{DynamicResource LOC_SHS_InstalledOnly}" MinWidth="150" IsChecked="{Binding InstalledOnly}" HorizontalAlignment="Left" Margin="0,2" ToolTip="{DynamicResource LOC_SHS_InstalledOnlyTooltip}"/>
+                <CheckBox Content="{DynamicResource LOC_SHS_ForceUpdate}" MinWidth="150" IsChecked="{Binding ForceUpdate}" HorizontalAlignment="Left" Margin="0,2" ToolTip="{DynamicResource LOC_SHS_ForceUpdateTooltip}"/>
+                <CheckBox Content="{DynamicResource LOC_SHS_UpdateOnStartUp}" MinWidth="150" IsChecked="{Binding UpdateOnStartup}" HorizontalAlignment="Left" Margin="0,2" ToolTip="{DynamicResource LOC_SHS_UpdateOnStartUpTooltip}"/>
+                <CheckBox Content="{DynamicResource LOC_SHS_ExcludeHidden}" MinWidth="150" IsChecked="{Binding ExcludeHidden}" HorizontalAlignment="Left" Margin="0,2" ToolTip="{DynamicResource LOC_SHS_ExcludeHiddenTooltip}"/>
+                <CheckBox Content="{DynamicResource LOC_SHS_SeparateFolders}" MinWidth="150" IsChecked="{Binding SeparateFolders}" HorizontalAlignment="Left" Margin="0,2" ToolTip="{DynamicResource LOC_SHS_SeparateFoldersTooltip}"/>
+                <CheckBox Content="{DynamicResource LOC_SHS_FadeEdges}" MinWidth="150" IsChecked="{Binding FadeBottom}" HorizontalAlignment="Left" Margin="0,2" ToolTip="{DynamicResource LOC_SHS_FadeEdgesTooltip}"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <StackPanel>

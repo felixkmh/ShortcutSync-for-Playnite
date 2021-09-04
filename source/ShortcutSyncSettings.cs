@@ -120,35 +120,21 @@ namespace ShortcutSync
                 checkBox.Margin = new System.Windows.Thickness { Bottom = 2, Left = 5, Right = 5, Top = 2 };
                 checkBox.Height = 20;
                 checkBox.Tag = srcOpt.Key;
-                checkBox.ToolTip = $"If enabled, shortcuts to games from {srcOpt.Key} are created and maintained on update.";
+                checkBox.ToolTip = string.Format(ResourceProvider.GetString("LOC_SHS_EnabledTooltip"),srcOpt.Key);
                 container.Children.Add(checkBox);
             }
-            //plugin.settingsView.PlayActionSettingsStack.Children.Clear();
-            foreach (var playActionOpt in EnabledPlayActions)
-            {
-                // Add checkboxes and set some properties
-                var checkBox = new CheckBox();
-                checkBox.Content = null;
-                checkBox.IsChecked = playActionOpt.Value;
-                checkBox.MinWidth = 50;
-                checkBox.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
-                checkBox.Margin = new System.Windows.Thickness { Bottom = 2, Left = 5, Right = 5, Top = 2 };
-                checkBox.Height = 20;
-                checkBox.Tag = playActionOpt.Key;
-                checkBox.ToolTip = $"If enabled, shortuts try to start games from {playActionOpt.Key} with their native launcher or without any launcher (bypassing Playnite), depending on the existing PlayAction of that game.";
-                //plugin.settingsView.PlayActionSettingsStack.Children.Add(checkBox);
-            }
+
             plugin.settingsView.ManuallyCreatedShortcutListBox.Items.Clear();
             foreach(var id in ManuallyCreatedShortcuts)
             {
                 var item = new ListBoxItem();
                 item.Tag = id;
                 item.ContextMenu = new ContextMenu();
-                var menuItem = new MenuItem { Header = "Remove Entry", Tag = id};
+                var menuItem = new MenuItem { Header = ResourceProvider.GetString("LOC_SHS_RemoveEntry"), Tag = id};
                 menuItem.Click += RemoveManual_Click;
                 item.ContextMenu.Items.Add(menuItem);
                 var game = plugin.PlayniteApi.Database.Games.Get(id);
-                item.Content = game == null? "Game not found: " + id.ToString() : $"{game.Name} ({ShortcutSync.GetSourceName(game)})";
+                item.Content = game == null? string.Format(ResourceProvider.GetString("LOC_SHS_GameNotFound"), id.ToString()) : $"{game.Name} ({ShortcutSync.GetSourceName(game)})";
                 item.ToolTip = item.Content;
                 plugin.settingsView.ManuallyCreatedShortcutListBox.Items.Add(item);
             }
@@ -158,11 +144,11 @@ namespace ShortcutSync
                 var item = new ListBoxItem();
                 item.Tag = id;
                 item.ContextMenu = new ContextMenu();
-                var menuItem = new MenuItem { Header = "Remove Entry", Tag = id };
+                var menuItem = new MenuItem { Header = ResourceProvider.GetString("LOC_SHS_RemoveEntry"), Tag = id };
                 menuItem.Click += RemoveExcluded_Click;
                 item.ContextMenu.Items.Add(menuItem);
                 var game = plugin.PlayniteApi.Database.Games.Get(id);
-                item.Content = game == null ? "Game not found: " + id.ToString() : $"{game.Name} ({ShortcutSync.GetSourceName(game)})";
+                item.Content = game == null ? string.Format(ResourceProvider.GetString("LOC_SHS_GameNotFound"), id.ToString()) : $"{game.Name} ({ShortcutSync.GetSourceName(game)})";
                 item.ToolTip = item.Content;
                 plugin.settingsView.ExcludedGamesListBox.Items.Add(item);
             }

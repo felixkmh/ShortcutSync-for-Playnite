@@ -87,7 +87,7 @@ namespace ShortcutSync
             {
                 new GameMenuItem
                 {
-                    Description = "Create manual TiledShortcut(s)",
+                    Description = ResourceProvider.GetString("LOC_SHS_CreateManual"),
                     MenuSection = "ShortcutSync",
                     Action = context => 
                     {
@@ -96,7 +96,7 @@ namespace ShortcutSync
                 },
                 new GameMenuItem
                 {
-                    Description = "Remove manual TiledShortcut(s)",
+                    Description = ResourceProvider.GetString("LOC_SHS_RemoveManual"),
                     MenuSection = "ShortcutSync",
                     Action = context => 
                     {
@@ -105,7 +105,7 @@ namespace ShortcutSync
                 },
                 new GameMenuItem
                 {
-                    Description = "Update TiledShortcut(s)",
+                    Description = ResourceProvider.GetString("LOC_SHS_UpdateSelected"),
                     MenuSection = "ShortcutSync",
                     Action = context => {
                          backgroundTasks.Queue(() => UpdateShortcuts(context.Games, settings.Copy(), true)); 
@@ -113,7 +113,7 @@ namespace ShortcutSync
                 },
                 new GameMenuItem
                 {
-                    Description = "Exclude selected games from ShortcutSync",
+                    Description = ResourceProvider.GetString("LOC_SHS_AddToExclusionList"),
                     MenuSection = "ShortcutSync",
                     Action = context => {
                         AddToExclusionList(from game in context.Games select game.Id, settings);
@@ -121,7 +121,7 @@ namespace ShortcutSync
                 },
                 new GameMenuItem
                 {
-                    Description = "Remove selected Games from ShortcutSync exclusion list",
+                    Description = ResourceProvider.GetString("LOC_SHS_RemoveFromExclusionList"),
                     MenuSection = "ShortcutSync",
                     Action = context => {
                         RemoveFromExclusionList(from game in context.Games select game.Id, settings);
@@ -129,8 +129,8 @@ namespace ShortcutSync
                 },
                 new GameMenuItem
                 {
-                    Description = "Open visualelementsmanifest.xml",
-                    MenuSection = "ShortcutSync|Edit Shortcut(s)",
+                    Description = ResourceProvider.GetString("LOC_SHS_OpenManifest"),
+                    MenuSection = $"ShortcutSync|{ResourceProvider.GetString("LOC_SHS_EditShortcuts")}",
                     Action = context => {
                         foreach (var game in context.Games)
                         {
@@ -145,8 +145,8 @@ namespace ShortcutSync
                 },
                 new GameMenuItem
                 {
-                    Description = "On",
-                    MenuSection = "ShortcutSync|Edit Shortcut(s)|Show Title on 150x150 Tile",
+                    Description = ResourceProvider.GetString("LOC_SHS_On"),
+                    MenuSection = $"ShortcutSync|{ResourceProvider.GetString("LOC_SHS_EditShortcuts")}|{ResourceProvider.GetString("LOC_SHS_ShowTitleOnTile")}",
                     Action = context => {
                         foreach (var game in context.Games)
                         { 
@@ -156,8 +156,8 @@ namespace ShortcutSync
                 },
                 new GameMenuItem
                 {
-                    Description = "Off",
-                    MenuSection = "ShortcutSync|Edit Shortcut(s)|Show Title on 150x150 Tile",
+                    Description = ResourceProvider.GetString("LOC_SHS_Off"),
+                    MenuSection = $"ShortcutSync|{ResourceProvider.GetString("LOC_SHS_EditShortcuts")}|{ResourceProvider.GetString("LOC_SHS_ShowTitleOnTile")}",
                     Action = context => {
                         foreach (var game in context.Games)
                         {
@@ -182,8 +182,8 @@ namespace ShortcutSync
                 },*/
                 new GameMenuItem
                 {
-                    Description = "Reset Shortcut",
-                    MenuSection = "ShortcutSync|Edit Shortcut(s)",
+                    Description = ResourceProvider.GetString("LOC_SHS_ResetShortcuts"),
+                    MenuSection = $"ShortcutSync|{ResourceProvider.GetString("LOC_SHS_EditShortcuts")}",
                     Action = context => {
                         RemoveShortcuts(context.Games, settings);
                         UpdateShortcuts(context.Games, settings);
@@ -272,7 +272,7 @@ namespace ShortcutSync
             {
                 new MainMenuItem
                 {
-                    Description = "Update All Shortcuts",
+                    Description = ResourceProvider.GetString("LOC_SHS_UpdateAllShortcuts"),
                     MenuSection = "@|ShortcutSync",
                     Action = context => {
                         PlayniteApi.Dialogs.ActivateGlobalProgress(
@@ -281,13 +281,13 @@ namespace ShortcutSync
                                 UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
                                 UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
                             },
-                            new GlobalProgressOptions("Updating Shortcuts...", false)
+                            new GlobalProgressOptions(ResourceProvider.GetString("LOC_SHS_UpdatingShortcuts"), false)
                         );
                     }
                 },
                 new MainMenuItem
                 {
-                    Description = "Re-Create All Shortcuts",
+                    Description = ResourceProvider.GetString("LOC_SHS_RecreateAllShortcuts"),
                     MenuSection = "@|ShortcutSync",
                     Action = context => {
                         PlayniteApi.Dialogs.ActivateGlobalProgress(
@@ -297,7 +297,7 @@ namespace ShortcutSync
                                 RemoveShortcuts(PlayniteApi.Database.Games, settings.Copy());
                                 UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy(), true, true);
                             },
-                            new GlobalProgressOptions("Creating Shortcuts...", false)
+                            new GlobalProgressOptions(ResourceProvider.GetString("LOC_SHS_CreatingShortcuts"), false)
                         );
                     }
                 }
@@ -327,7 +327,7 @@ namespace ShortcutSync
                     }
                     else
                     {
-                        PlayniteApi.Dialogs.ShowErrorMessage($"The selected shortcut folder \"{settings.ShortcutPath}\" is inaccessible. Please select another folder.", "Folder inaccessible.");
+                        PlayniteApi.Dialogs.ShowErrorMessage(string.Format(ResourceProvider.GetString("LOC_SHS_ErrorFolderMessage"), settings.ShortcutPath), ResourceProvider.GetString("LOC_SHS_ErrorFolderLabel"));
                     }
                 }
                 PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
@@ -348,18 +348,18 @@ namespace ShortcutSync
 
             if (AppDomain.CurrentDomain.GetAssemblies()
                  .Select(asm => asm.GetName())
-                 .Any(asm => asm.Name == "QuickSearchSDK" && asm.Version.Major == 1 && asm.Version.Minor == 3))
+                 .Any(asm => asm.Name == "QuickSearchSDK" && asm.Version.Major == 1 && asm.Version.Minor == 4))
             {
                 QuickSearch.QuickSearchSDK.AddCommand("ShortcutSync", new List<QuickSearch.SearchItems.CommandAction>()
                 {
-                    new QuickSearch.SearchItems.CommandAction() {Name = "Update", Action = () =>
+                    new QuickSearch.SearchItems.CommandAction() {Name = ResourceProvider.GetString("LOC_SHS_Update"), Action = () =>
                         { PlayniteApi.Dialogs.ActivateGlobalProgress(
                             (progress) => {
                                 CreateFolderStructure(settings.ShortcutPath);
                                 UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
                                 UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
                             },
-                            new GlobalProgressOptions("Updating Shortcuts...", false)
+                            new GlobalProgressOptions(ResourceProvider.GetString("LOC_SHS_UpdatingShortcuts"), false)
                         );}
                     }
                 }, "Synchronize Shortucts").IconChar = QuickSearch.IconChars.Link;
