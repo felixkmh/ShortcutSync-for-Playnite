@@ -19,20 +19,20 @@ namespace ShortcutSync
         public event OnSettingsChangedAction OnSettingsChanged;
         private readonly ShortcutSync plugin;
 
-        [QuickSearch.Attributes.GenericOption("Shortcut Path", Description = "Location in which the Shortcuts will be created")]
+        [QuickSearch.Attributes.GenericOption("LOC_SHS_ShortcutPath", Description = "LOC_SHS_ShortcutPathTooltip")]
         public string ShortcutPath { get; set; } =
             System.Environment.ExpandEnvironmentVariables(Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.StartMenu), "PlayniteGames"));
 
-        [QuickSearch.Attributes.GenericOption("Installed Only", Description = "Only create Shortcuts for installed games")]
+        [QuickSearch.Attributes.GenericOption("LOC_SHS_InstalledOnly", Description = "LOC_SHS_InstalledOnlyTooltip")]
         public bool InstalledOnly { get; set; } = true;
-        [QuickSearch.Attributes.GenericOption("Update on Startup", Description = "Update Shortcuts when Playnite launches")]
+        [QuickSearch.Attributes.GenericOption("LOC_SHS_UpdateOnStartUp", Description = "LOC_SHS_UpdateOnStartUpTooltip")]
         public bool UpdateOnStartup { get; set; } = false;
         public bool ForceUpdate { get; set; } = false;
-        [QuickSearch.Attributes.GenericOption("Exclude Hidden", Description = "Ignore hidden games when creating Shortcuts")]
+        [QuickSearch.Attributes.GenericOption("LOC_SHS_ExcludeHidden", Description = "LOC_SHS_ExcludeHiddenTooltip")]
         public bool ExcludeHidden { get; set; } = false;
-        [QuickSearch.Attributes.GenericOption("Separate Folders", Description = "Put Shortcuts into separate sub-folders named after their source")]
+        [QuickSearch.Attributes.GenericOption("LOC_SHS_SeparateFolders", Description = "LOC_SHS_SeparateFoldersTooltip")]
         public bool SeparateFolders { get; set; } = false;
-        [QuickSearch.Attributes.GenericOption("Fade Bottom of Tiles", Description = "Fade the bottom of the tile images to make titles more readable. Only applied after updating Shoretcuts")]
+        [QuickSearch.Attributes.GenericOption("LOC_SHS_FadeEdges", Description = "LOC_SHS_FadeEdgesTooltip")]
         public bool FadeBottom { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
         public Dictionary<string, bool> EnabledPlayActions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
