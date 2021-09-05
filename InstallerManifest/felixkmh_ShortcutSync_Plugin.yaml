@@ -5,20 +5,20 @@ Packages:
     ReleaseDate: 2021-09-04
     PackageUrl: https://github.com/felixkmh/ShortcutSync-for-Playnite/releases/download/v2.1.0/felixkmh_ShortcutSync_Plugin_2_1_0.pext
     Changelog:
-      - localization support. See https://crowdin.com/project/shortcutsync-for-playnite to contribute
-      - added german translation
-      - updated to QuickSearchSDK 1.4
+      - 'localization support. See https://crowdin.com/project/shortcutsync-for-playnite to contribute'
+      - 'added german translation'
+      - 'updated to QuickSearchSDK 1.4'
   - Version: 2.0.0
     RequiredApiVersion: 6.0.0
     ReleaseDate: 2021-09-03
     PackageUrl: https://github.com/felixkmh/ShortcutSync-for-Playnite/releases/download/v2.0.0/felixkmh_ShortcutSync_Plugin_2_0_0.pext
     Changelog:
-      - Playnite 9 Beta support, not compatible with Playnite 8!
-      - Changed Id, so you need to uninstall before reinstalling!  
+      - 'Playnite 9 Beta support, not compatible with Playnite 8!'
+      - 'Changed Id, so you need to uninstall before reinstalling!'  
   - Version: 1.15.2
     RequiredApiVersion: 5.5.0
     ReleaseDate: 2021-01-07
     PackageUrl: https://github.com/felixkmh/ShortcutSync-for-Playnite/releases/download/v1.15.2/ShortcutSync_1_15_2.pext
     Changelog:
-      - Fixed extension not loading in fullscreen mode.
-      - Added support for "ExtensionUpdater" plugin in yaml file.
+      - 'Fixed extension not loading in fullscreen mode.'
+      - 'Added support for "ExtensionUpdater" plugin in yaml file.'
