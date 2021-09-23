@@ -346,24 +346,19 @@ namespace ShortcutSync
 
             // QuickSearch
 
-            if (AppDomain.CurrentDomain.GetAssemblies()
-                 .Select(asm => asm.GetName())
-                 .Any(asm => asm.Name == "QuickSearchSDK" && asm.Version.Major == 1 && asm.Version.Minor == 4))
+            QuickSearch.QuickSearchSDK.AddCommand("ShortcutSync", new List<QuickSearch.SearchItems.CommandAction>()
             {
-                QuickSearch.QuickSearchSDK.AddCommand("ShortcutSync", new List<QuickSearch.SearchItems.CommandAction>()
-                {
-                    new QuickSearch.SearchItems.CommandAction() {Name = ResourceProvider.GetString("LOC_SHS_Update"), Action = () =>
-                        { PlayniteApi.Dialogs.ActivateGlobalProgress(
-                            (progress) => {
-                                CreateFolderStructure(settings.ShortcutPath);
-                                UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
-                                UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
-                            },
-                            new GlobalProgressOptions(ResourceProvider.GetString("LOC_SHS_UpdatingShortcuts"), false)
-                        );}
-                    }
-                }, "Synchronize Shortucts").IconChar = QuickSearch.IconChars.Link;
-            }
+                new QuickSearch.SearchItems.CommandAction() {Name = ResourceProvider.GetString("LOC_SHS_Update"), Action = () =>
+                    { PlayniteApi.Dialogs.ActivateGlobalProgress(
+                        (progress) => {
+                            CreateFolderStructure(settings.ShortcutPath);
+                            UpdateShortcutDicts(settings.ShortcutPath, settings.Copy());
+                            UpdateShortcuts(PlayniteApi.Database.Games, settings.Copy());
+                        },
+                        new GlobalProgressOptions(ResourceProvider.GetString("LOC_SHS_UpdatingShortcuts"), false)
+                    );}
+                }
+            }, "Synchronize Shortucts").IconChar = QuickSearch.IconChars.Link;
             
         }
 
