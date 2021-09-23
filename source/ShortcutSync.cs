@@ -363,7 +363,6 @@ namespace ShortcutSync
                         );}
                     }
                 }, "Synchronize Shortucts").IconChar = QuickSearch.IconChars.Link;
-                QuickSearch.QuickSearchSDK.AddPluginSettings("ShortcutSync", settings, OpenSettingsView);
             }
             
         }
