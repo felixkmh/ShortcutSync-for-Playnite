@@ -370,6 +370,19 @@ namespace ShortcutSync
             float brightness = 0.5f;
             if (System.IO.File.Exists(iconPath))
             {
+                // Check if file can be accessed
+                try
+                {
+                    using (FileStream stream = File.Open(iconPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        stream.Close();
+                    }
+                }
+                catch (IOException ex)
+                {
+                    ShortcutSync.logger?.Error(ex, $"Could not open icon at \"{iconPath}\" to create tile image for game {TargetObject?.Name??""}.");
+                    return (bgColor, brightness);
+                }
                 Bitmap bitmap = null;
                 if (Path.GetExtension(iconPath).ToLower() == ".ico")
                 {
@@ -527,7 +540,7 @@ namespace ShortcutSync
             Bitmap bitmap = null;
             var i = new System.Drawing.IconLib.MultiIcon();
             var si = i.Add("icon");
-            using (var stream = new FileStream(iconPath, FileMode.Open))
+            using (var stream = new FileStream(iconPath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 si.Load(stream);
             }
