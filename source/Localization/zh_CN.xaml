@@ -1,14 +1,14 @@
 ﻿<?xml version="1.0"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
 	<!--Menu Entries-->
-    <sys:String x:Key="LOC_SHS_UpdateAllShortcuts"></sys:String>
-    <sys:String x:Key="LOC_SHS_RecreateAllShortcuts"></sys:String>
-    <sys:String x:Key="LOC_SHS_Update"></sys:String>
+    <sys:String x:Key="LOC_SHS_UpdateAllShortcuts">更新所有快捷方式</sys:String>
+    <sys:String x:Key="LOC_SHS_RecreateAllShortcuts">重新创建所有快捷方式</sys:String>
+    <sys:String x:Key="LOC_SHS_Update">更新</sys:String>
 
     <!--Message Boxes-->
-    <sys:String x:Key="LOC_SHS_UpdatingShortcuts"></sys:String>
-    <sys:String x:Key="LOC_SHS_CreatingShortcuts"></sys:String>
-    <sys:String x:Key="LOC_SHS_ErrorFolderLabel"></sys:String>
+    <sys:String x:Key="LOC_SHS_UpdatingShortcuts">正在更新快捷方式...</sys:String>
+    <sys:String x:Key="LOC_SHS_CreatingShortcuts">正在创建快捷方式...</sys:String>
+    <sys:String x:Key="LOC_SHS_ErrorFolderLabel">文件夹不可访问。</sys:String>
     <sys:String x:Key="LOC_SHS_ErrorFolderMessage"></sys:String>
 
     <!--GameMenu Entries-->
