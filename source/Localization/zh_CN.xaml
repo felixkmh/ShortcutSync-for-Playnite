@@ -9,49 +9,49 @@
     <sys:String x:Key="LOC_SHS_UpdatingShortcuts">正在更新快捷方式...</sys:String>
     <sys:String x:Key="LOC_SHS_CreatingShortcuts">正在创建快捷方式...</sys:String>
     <sys:String x:Key="LOC_SHS_ErrorFolderLabel">文件夹不可访问。</sys:String>
-    <sys:String x:Key="LOC_SHS_ErrorFolderMessage"></sys:String>
+    <sys:String x:Key="LOC_SHS_ErrorFolderMessage">所选快捷方式文件夹“{0}”无法访问。请选择另一个文件夹。</sys:String>
 
     <!--GameMenu Entries-->
-    <sys:String x:Key="LOC_SHS_CreateManual"></sys:String>
-    <sys:String x:Key="LOC_SHS_RemoveManual"></sys:String>
-    <sys:String x:Key="LOC_SHS_UpdateSelected"></sys:String>
-    <sys:String x:Key="LOC_SHS_AddToExclusionList"></sys:String>
-    <sys:String x:Key="LOC_SHS_RemoveFromExclusionList"></sys:String>
-    <sys:String x:Key="LOC_SHS_OpenManifest"></sys:String>
-    <sys:String x:Key="LOC_SHS_ShowTitleOnTile"></sys:String>
-    <sys:String x:Key="LOC_SHS_EditShortcuts"></sys:String>
-    <sys:String x:Key="LOC_SHS_On"></sys:String>
-    <sys:String x:Key="LOC_SHS_Off"></sys:String>
-    <sys:String x:Key="LOC_SHS_ResetShortcuts"></sys:String>
+    <sys:String x:Key="LOC_SHS_CreateManual">创建手动磁贴快捷方式</sys:String>
+    <sys:String x:Key="LOC_SHS_RemoveManual">移除手动磁贴快捷方式</sys:String>
+    <sys:String x:Key="LOC_SHS_UpdateSelected">更新磁贴快捷方式</sys:String>
+    <sys:String x:Key="LOC_SHS_AddToExclusionList">将所选游戏从 ShortcutSync 中排除</sys:String>
+    <sys:String x:Key="LOC_SHS_RemoveFromExclusionList">将所选游戏移除出 ShortcutSync 的排除列表</sys:String>
+    <sys:String x:Key="LOC_SHS_OpenManifest">打开 visualelementsmanifest.xml</sys:String>
+    <sys:String x:Key="LOC_SHS_ShowTitleOnTile">在 150x150 的磁贴上显示标题</sys:String>
+    <sys:String x:Key="LOC_SHS_EditShortcuts">编辑快捷方式</sys:String>
+    <sys:String x:Key="LOC_SHS_On">开</sys:String>
+    <sys:String x:Key="LOC_SHS_Off">关</sys:String>
+    <sys:String x:Key="LOC_SHS_ResetShortcuts">重制快捷方式</sys:String>
 	
 	<!--Settings-->
 	<!--Labels-->
-	<sys:String x:Key="LOC_SHS_ShortcutPath"></sys:String>
-    <sys:String x:Key="LOC_SHS_InstalledOnly"></sys:String>
-    <sys:String x:Key="LOC_SHS_ForceUpdate"></sys:String>
-    <sys:String x:Key="LOC_SHS_UpdateOnStartUp"></sys:String>
-    <sys:String x:Key="LOC_SHS_ExcludeHidden"></sys:String>
-    <sys:String x:Key="LOC_SHS_SeparateFolders"></sys:String>
-    <sys:String x:Key="LOC_SHS_FadeEdges"></sys:String>
-    <sys:String x:Key="LOC_SHS_PerSourceOptions"></sys:String>
-    <sys:String x:Key="LOC_SHS_Sources"></sys:String>
-    <sys:String x:Key="LOC_SHS_Enabled"></sys:String>
-    <sys:String x:Key="LOC_SHS_ManualShortcuts"></sys:String>
-    <sys:String x:Key="LOC_SHS_ExcludedGames"></sys:String>
-    <sys:String x:Key="LOC_SHS_RemoveEntry"></sys:String>
-    <sys:String x:Key="LOC_SHS_GameNotFound"></sys:String>
+	<sys:String x:Key="LOC_SHS_ShortcutPath">快捷方式路径：</sys:String>
+    <sys:String x:Key="LOC_SHS_InstalledOnly">仅已安装</sys:String>
+    <sys:String x:Key="LOC_SHS_ForceUpdate">强制更新</sys:String>
+    <sys:String x:Key="LOC_SHS_UpdateOnStartUp">启动时更新</sys:String>
+    <sys:String x:Key="LOC_SHS_ExcludeHidden">排除已隐藏</sys:String>
+    <sys:String x:Key="LOC_SHS_SeparateFolders">为每个来源使用单独的文件夹：</sys:String>
+    <sys:String x:Key="LOC_SHS_FadeEdges">磁贴图像的边缘淡化</sys:String>
+    <sys:String x:Key="LOC_SHS_PerSourceOptions">每个来源选项：</sys:String>
+    <sys:String x:Key="LOC_SHS_Sources">来源</sys:String>
+    <sys:String x:Key="LOC_SHS_Enabled">已启用</sys:String>
+    <sys:String x:Key="LOC_SHS_ManualShortcuts">手动快捷方式：</sys:String>
+    <sys:String x:Key="LOC_SHS_ExcludedGames">排除的游戏：</sys:String>
+    <sys:String x:Key="LOC_SHS_RemoveEntry">移除条目</sys:String>
+    <sys:String x:Key="LOC_SHS_GameNotFound">游戏未找到：{0}</sys:String>
 
     <!--Tool Tips-->
-    <sys:String x:Key="LOC_SHS_ShortcutPathTooltip"></sys:String>
-    <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip"></sys:String>
-    <sys:String x:Key="LOC_SHS_ForceUpdateTooltip"></sys:String>
-    <sys:String x:Key="LOC_SHS_UpdateOnStartUpTooltip"></sys:String>
-    <sys:String x:Key="LOC_SHS_ExcludeHiddenTooltip"></sys:String>
-    <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip"></sys:String>
-    <sys:String x:Key="LOC_SHS_FadeEdgesTooltip"></sys:String>
-    <sys:String x:Key="LOC_SHS_EnabledTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">创建快捷方式的路径。推荐在开始菜单中创建一个专用于此扩展的文件夹。</sys:String>
+    <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip">若启用，则仅创建已安装游戏的快捷方式，并在更新时移除未安装游戏的快捷方式。</sys:String>
+    <sys:String x:Key="LOC_SHS_ForceUpdateTooltip">若启用，则在它们更新时总是从零重新创建快捷方式。</sys:String>
+    <sys:String x:Key="LOC_SHS_UpdateOnStartUpTooltip">若启用，则在启动时更新游戏的快捷方式。</sys:String>
+    <sys:String x:Key="LOC_SHS_ExcludeHiddenTooltip">若启用，则不创建已隐藏游戏的快捷方式，并在更新时将其移除。</sys:String>
+    <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip">若启用，快捷方式将被放入其路径中的一个以来源命名的子文件夹。</sys:String>
+    <sys:String x:Key="LOC_SHS_FadeEdgesTooltip">若启用，将标题可见磁贴的背景图像底部淡出，以改善标题的可读性。</sys:String>
+    <sys:String x:Key="LOC_SHS_EnabledTooltip">如果启用，则为来自 {0} 的游戏创建快捷方式并在更新时维护。</sys:String>
 
     <!--Buttons-->
-    <sys:String x:Key="LOC_SHS_SelectShortcutPathButton"></sys:String>
+    <sys:String x:Key="LOC_SHS_SelectShortcutPathButton">选择文件夹</sys:String>
 	
 </ResourceDictionary>
