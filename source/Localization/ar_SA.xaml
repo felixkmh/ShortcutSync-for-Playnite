@@ -1,0 +1,57 @@
+﻿<?xml version="1.0"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+	<!--Menu Entries-->
+    <sys:String x:Key="LOC_SHS_UpdateAllShortcuts">تحديث جميع الاختصارات</sys:String>
+    <sys:String x:Key="LOC_SHS_RecreateAllShortcuts">إعادة إنشاء جميع الاختصارات</sys:String>
+    <sys:String x:Key="LOC_SHS_Update">تحديث</sys:String>
+
+    <!--Message Boxes-->
+    <sys:String x:Key="LOC_SHS_UpdatingShortcuts">جارٍ تحديث الاختصارات...</sys:String>
+    <sys:String x:Key="LOC_SHS_CreatingShortcuts">جارٍ إنشاء الاختصارات...</sys:String>
+    <sys:String x:Key="LOC_SHS_ErrorFolderLabel">تعذر الوصول إلى المجلد.</sys:String>
+    <sys:String x:Key="LOC_SHS_ErrorFolderMessage">مجلد الاختصار المحدد &quot;{0}&quot; لا يمكن الوصول إليه. الرجاء تحديد مجلد آخر.</sys:String>
+
+    <!--GameMenu Entries-->
+    <sys:String x:Key="LOC_SHS_CreateManual">إنشاء TiledShortcut(s) يدوياً</sys:String>
+    <sys:String x:Key="LOC_SHS_RemoveManual">إزالة TiledShortcut(s) يدوياً</sys:String>
+    <sys:String x:Key="LOC_SHS_UpdateSelected">تحديث TiledShortcut(s)</sys:String>
+    <sys:String x:Key="LOC_SHS_AddToExclusionList">استبعاد الألعاب المحددة من اختصار التزامن</sys:String>
+    <sys:String x:Key="LOC_SHS_RemoveFromExclusionList">إزالة الألعاب المحددة من قائمة استبعاد اختصار التزامن</sys:String>
+    <sys:String x:Key="LOC_SHS_OpenManifest">فتح visualelementsmanifest.xml</sys:String>
+    <sys:String x:Key="LOC_SHS_ShowTitleOnTile">إظهار العنوان في البلاط 150x150</sys:String>
+    <sys:String x:Key="LOC_SHS_EditShortcuts">تعديل الاختصارات</sys:String>
+    <sys:String x:Key="LOC_SHS_On">مفعل</sys:String>
+    <sys:String x:Key="LOC_SHS_Off">معطل</sys:String>
+    <sys:String x:Key="LOC_SHS_ResetShortcuts">إعادة تعيين الاختصارات</sys:String>
+	
+	<!--Settings-->
+	<!--Labels-->
+	<sys:String x:Key="LOC_SHS_ShortcutPath">مسار الاختصار:</sys:String>
+    <sys:String x:Key="LOC_SHS_InstalledOnly">المثبتة فقط</sys:String>
+    <sys:String x:Key="LOC_SHS_ForceUpdate">إجبار التحديث</sys:String>
+    <sys:String x:Key="LOC_SHS_UpdateOnStartUp">التحديث عند بدء التشغيل</sys:String>
+    <sys:String x:Key="LOC_SHS_ExcludeHidden">استبعاد المخفي</sys:String>
+    <sys:String x:Key="LOC_SHS_SeparateFolders">استخدام مجلد منفصل لكل مصدر:</sys:String>
+    <sys:String x:Key="LOC_SHS_FadeEdges">تلاشي حافة صور البلاط</sys:String>
+    <sys:String x:Key="LOC_SHS_PerSourceOptions">خيارات حسب المصدر:</sys:String>
+    <sys:String x:Key="LOC_SHS_Sources">المصادر</sys:String>
+    <sys:String x:Key="LOC_SHS_Enabled">مفعّل</sys:String>
+    <sys:String x:Key="LOC_SHS_ManualShortcuts">الاختصارات اليدوية:</sys:String>
+    <sys:String x:Key="LOC_SHS_ExcludedGames">الألعاب المستثناة:</sys:String>
+    <sys:String x:Key="LOC_SHS_RemoveEntry">إزالة المدخل</sys:String>
+    <sys:String x:Key="LOC_SHS_GameNotFound">اللعبة غير موجودة: {0}</sys:String>
+
+    <!--Tool Tips-->
+    <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">المسار الذي سيتم إنشاء الاختصارات فيه. عادة ما يكون مجلد فارغ داخل قائمة البدء، يستخدم فقط لهذاه الإضافة.</sys:String>
+    <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip">في حالة تفعيله، يتم إنشاء الاختصارات فقط للألعاب المثبتة و إزالة إختصارات الألعاب غير المثبتة عند التحديث.</sys:String>
+    <sys:String x:Key="LOC_SHS_ForceUpdateTooltip">في حالة التمكين، يقوم دائمًا بإعادة إنشاء الاختصارات من البداية عند تحديثها.</sys:String>
+    <sys:String x:Key="LOC_SHS_UpdateOnStartUpTooltip">في حالة التمكين، يتم تحديث اختصارات الألعاب عند بدء التشغيل.</sys:String>
+    <sys:String x:Key="LOC_SHS_ExcludeHiddenTooltip">في حالة التمكين، يتم تجاهل الألعاب المخفية عند إنشاء اختصارات ويتم إزالة اختصارات الألعاب المخفية عند التحديث.</sys:String>
+    <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip">في حالة التمكين، سيتم وضع الاختصارات في مجلد فرعي داخل مسار الاختصار المسمى باسم المصدر.</sys:String>
+    <sys:String x:Key="LOC_SHS_FadeEdgesTooltip">في حالة التمكين ، فإن الجزء السفلي من صور خلفية البلاط يكون باهتًا لتحسين إمكانية قراءة العنوان، إذا كان العنوان مرئيًا.</sys:String>
+    <sys:String x:Key="LOC_SHS_EnabledTooltip">في حالة التمكين، يتم إنشاء اختصارات للألعاب من {0} والحفاظ عليها عند التحديث.</sys:String>
+
+    <!--Buttons-->
+    <sys:String x:Key="LOC_SHS_SelectShortcutPathButton">اختر مجلدا</sys:String>
+	
+</ResourceDictionary>
