@@ -6,3 +6,4 @@ Can be set up to update on startup, otherwise it reacts to changes in the databa
 
 Uses [IconLib](https://www.codeproject.com/Articles/16178/IconLib-Icons-Unfolded-MultiIcon-and-Windows-Vista) to extract the logo from .ico files.
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/C1C6CH5IN)
