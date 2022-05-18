@@ -40,10 +40,10 @@
     <sys:String x:Key="LOC_SHS_ExcludedGames">Ausgeschlossene Spiele:</sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry">Eintrag entfernen</sys:String>
     <sys:String x:Key="LOC_SHS_GameNotFound">Spiel nicht gefunden: {0}</sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay">Installierten Spielen &quot;Spiele&quot; voranstellen</sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall">Nicht installierten Spielen &quot;Installiere&quot; voranstellen</sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixInstall">Installiere {0}</sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixPlay">Spiele {0}</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay">Installierten Spielen &quot;Spiele&quot; anhängen</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall">Nicht installierten Spielen &quot;Installiere&quot; anhängen</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixInstall">{0} installieren</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixPlay">{0} spielen</sys:String>
     <!--Tool Tips-->
     <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">Der Pfad in dem die Verknüpfungen angelegt werden. Idealerweise ein leeres Verzeichnis im Start-Menü.</sys:String>
     <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip">Wenn aktiv, werden nur Verknüpfungen zu installierten Spielen erstellt und Verknüpfungen zu deinstallierten Spielen werden bei Aktualisierung entfernt.</sys:String>
