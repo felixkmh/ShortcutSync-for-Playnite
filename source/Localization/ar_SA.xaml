@@ -40,7 +40,8 @@
     <sys:String x:Key="LOC_SHS_ExcludedGames">الألعاب المستثناة:</sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry">إزالة المدخل</sys:String>
     <sys:String x:Key="LOC_SHS_GameNotFound">اللعبة غير موجودة: {0}</sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcuts"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixInstall"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixPlay"></sys:String>
     <!--Tool Tips-->

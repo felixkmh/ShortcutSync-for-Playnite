@@ -40,7 +40,8 @@
     <sys:String x:Key="LOC_SHS_ExcludedGames"></sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry"></sys:String>
     <sys:String x:Key="LOC_SHS_GameNotFound"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcuts"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixInstall"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixPlay"></sys:String>
     <!--Tool Tips-->
