@@ -40,7 +40,8 @@
     <sys:String x:Key="LOC_SHS_ExcludedGames">排除的游戏：</sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry">移除条目</sys:String>
     <sys:String x:Key="LOC_SHS_GameNotFound">游戏未找到：{0}</sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcuts"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixInstall"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixPlay"></sys:String>
     <!--Tool Tips-->
