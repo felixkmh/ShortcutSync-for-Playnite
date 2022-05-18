@@ -40,7 +40,9 @@
     <sys:String x:Key="LOC_SHS_ExcludedGames">排除的游戏：</sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry">移除条目</sys:String>
     <sys:String x:Key="LOC_SHS_GameNotFound">游戏未找到：{0}</sys:String>
-
+    <sys:String x:Key="LOC_SHS_PrefixShortcuts"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixInstall"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixPlay"></sys:String>
     <!--Tool Tips-->
     <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">创建快捷方式的路径。推荐在开始菜单中创建一个专用于此扩展的文件夹。</sys:String>
     <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip">若启用，则仅创建已安装游戏的快捷方式，并在更新时移除未安装游戏的快捷方式。</sys:String>
