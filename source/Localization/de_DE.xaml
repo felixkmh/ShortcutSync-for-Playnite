@@ -40,8 +40,8 @@
     <sys:String x:Key="LOC_SHS_ExcludedGames">Ausgeschlossene Spiele:</sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry">Eintrag entfernen</sys:String>
     <sys:String x:Key="LOC_SHS_GameNotFound">Spiel nicht gefunden: {0}</sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay">Installierten Spielen &quot;Spiele&quot; voranstellen</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall">Nicht installierten Spielen &quot;Installiere&quot; voranstellen</sys:String>
     <sys:String x:Key="LOC_SHS_PrefixInstall">Installiere {0}</sys:String>
     <sys:String x:Key="LOC_SHS_PrefixPlay">Spiele {0}</sys:String>
     <!--Tool Tips-->
