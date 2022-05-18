@@ -43,6 +43,14 @@ namespace ShortcutSync
             Error
         }
 
+        [Flags]
+        public enum Prefix
+        {
+            None = 0,
+            Play = 1,
+            Install = 2,
+        }
+
         public class UpdateAvailableResult
         {
             public bool Available { get; private set; }
@@ -387,7 +395,7 @@ namespace ShortcutSync
                                 basePath: settingsSnapshot.ShortcutPath,
                                 includeSourceName: HasExistingShortcutDuplicates(shortcut.TargetObject) && !settingsSnapshot.SeparateFolders,
                                 seperateFolders: settingsSnapshot.SeparateFolders,
-                                usePrefix: settingsSnapshot.PrefixShortcuts),
+                                usePrefix: settingsSnapshot.PrefixFlags),
                             GetLauncherScriptIconsPath(),
                             GetLauncherScriptPath()
                         );
@@ -581,12 +589,18 @@ namespace ShortcutSync
         /// <returns>
         /// String containing path and file name for the .url shortcut.
         /// </returns>
-        private static string GetShortcutPath(Game game, string basePath, bool includeSourceName = true, bool usePrefix = false, bool seperateFolders = false, string extension = ".lnk")
+        private static string GetShortcutPath(Game game, string basePath, bool includeSourceName = true, Prefix usePrefix = Prefix.None, bool seperateFolders = false, string extension = ".lnk")
         {
             var validName = GetSafeFileName(game.Name);
-            if (usePrefix)
+            if (usePrefix.HasFlag(Prefix.Play) && game.IsInstalled)
             {
-                string prefix = game.IsInstalled ? ResourceProvider.GetString("LOC_SHS_PrefixPlay") : ResourceProvider.GetString("LOC_SHS_PrefixInstall");
+                string prefix = ResourceProvider.GetString("LOC_SHS_PrefixPlay");
+                validName = string.Format(prefix, validName);
+            }
+
+            if (usePrefix.HasFlag(Prefix.Install) && !game.IsInstalled)
+            {
+                string prefix = ResourceProvider.GetString("LOC_SHS_PrefixInstall");
                 validName = string.Format(prefix, validName);
             }
             string path;
@@ -756,7 +770,7 @@ namespace ShortcutSync
                                         basePath: settings.ShortcutPath,
                                         includeSourceName: true,
                                         seperateFolders: settings.SeparateFolders,
-                                        usePrefix: settings.PrefixShortcuts));
+                                        usePrefix: settings.PrefixFlags));
                                     hasDuplicates = true;
                                 }
                             }
@@ -774,7 +788,7 @@ namespace ShortcutSync
                             basePath: settings.ShortcutPath,
                             includeSourceName: hasDuplicates,
                             seperateFolders: settings.SeparateFolders,
-                            usePrefix: settings.PrefixShortcuts));
+                            usePrefix: settings.PrefixFlags));
                     }
                     else
                     {
@@ -788,7 +802,7 @@ namespace ShortcutSync
                                         basePath: settings.ShortcutPath,
                                         includeSourceName: hasDuplicates,
                                         seperateFolders: settings.SeparateFolders,
-                                        usePrefix: settings.PrefixShortcuts),
+                                        usePrefix: settings.PrefixFlags),
                                     launchScriptFolder: GetLauncherScriptPath(),
                                     tileIconFolder: GetLauncherScriptIconsPath()
                                 )
@@ -851,7 +865,7 @@ namespace ShortcutSync
                                     basePath: settings.ShortcutPath,
                                     includeSourceName: false,
                                     seperateFolders: settings.SeparateFolders,
-                                    usePrefix: settings.PrefixShortcuts));
+                                    usePrefix: settings.PrefixFlags));
                         }
                 }
 

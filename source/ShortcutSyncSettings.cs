@@ -34,8 +34,16 @@ namespace ShortcutSync
         public bool SeparateFolders { get; set; } = false;
         [QuickSearch.Attributes.GenericOption("LOC_SHS_FadeEdges", Description = "LOC_SHS_FadeEdgesTooltip")]
         public bool FadeBottom { get; set; } = false;
-        [QuickSearch.Attributes.GenericOption("LOC_SHS_PrefixShortcuts")]
-        public bool PrefixShortcuts { get; set; } = false;
+        [QuickSearch.Attributes.GenericOption("LOC_SHS_PrefixShortcutsWithPlay")]
+        public bool PrefixShortcutsPlay { get; set; } = false;
+        [QuickSearch.Attributes.GenericOption("LOC_SHS_PrefixShortcutsWithInstall")]
+        public bool PrefixShortcutsInstall { get; set; } = false;
+
+        [Playnite.SDK.Data.DontSerialize]
+        public ShortcutSync.Prefix PrefixFlags => 
+            (PrefixShortcutsPlay ? ShortcutSync.Prefix.Play : ShortcutSync.Prefix.None) | 
+            (PrefixShortcutsInstall ? ShortcutSync.Prefix.Install : ShortcutSync.Prefix.None);
+
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
         public Dictionary<string, bool> EnabledPlayActions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
         public HashSet<Guid> ManuallyCreatedShortcuts { get; set; } = new HashSet<Guid>();

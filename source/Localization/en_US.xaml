@@ -40,7 +40,8 @@
     <sys:String x:Key="LOC_SHS_ExcludedGames">Excluded Games:</sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry">Remove Entry</sys:String>
     <sys:String x:Key="LOC_SHS_GameNotFound">Game not found: {0}</sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcuts">Prefix Shortcuts with Play/Install</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay">Prefix installed Games with "Play"</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall">Prefix uninstalled Games with "Install"</sys:String>
     <sys:String x:Key="LOC_SHS_PrefixInstall">Install {0}</sys:String>
     <sys:String x:Key="LOC_SHS_PrefixPlay">Play {0}</sys:String>
     <!--Tool Tips-->
