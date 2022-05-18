@@ -3,8 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:ShortcutSync"
              mc:Ignorable="d"
-             d:DesignHeight="400" d:DesignWidth="600">
+             d:DesignHeight="400" d:DesignWidth="600"
+             d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type=local:ShortcutSyncSettings}">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalContentAlignment="Stretch">
         <StackPanel Margin="5">
             <Label Content="{DynamicResource LOC_SHS_ShortcutPath}"/>
@@ -25,6 +27,7 @@
                 <CheckBox Content="{DynamicResource LOC_SHS_ExcludeHidden}" MinWidth="150" IsChecked="{Binding ExcludeHidden}" HorizontalAlignment="Left" Margin="0,2" ToolTip="{DynamicResource LOC_SHS_ExcludeHiddenTooltip}"/>
                 <CheckBox Content="{DynamicResource LOC_SHS_SeparateFolders}" MinWidth="150" IsChecked="{Binding SeparateFolders}" HorizontalAlignment="Left" Margin="0,2" ToolTip="{DynamicResource LOC_SHS_SeparateFoldersTooltip}"/>
                 <CheckBox Content="{DynamicResource LOC_SHS_FadeEdges}" MinWidth="150" IsChecked="{Binding FadeBottom}" HorizontalAlignment="Left" Margin="0,2" ToolTip="{DynamicResource LOC_SHS_FadeEdgesTooltip}"/>
+                <CheckBox Content="{DynamicResource LOC_SHS_PrefixShortcuts}" MinWidth="150" IsChecked="{Binding PrefixShortcuts}" HorizontalAlignment="Left" Margin="0,2"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <StackPanel>

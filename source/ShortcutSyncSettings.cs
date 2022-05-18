@@ -34,6 +34,8 @@ namespace ShortcutSync
         public bool SeparateFolders { get; set; } = false;
         [QuickSearch.Attributes.GenericOption("LOC_SHS_FadeEdges", Description = "LOC_SHS_FadeEdgesTooltip")]
         public bool FadeBottom { get; set; } = false;
+        [QuickSearch.Attributes.GenericOption("LOC_SHS_PrefixShortcuts")]
+        public bool PrefixShortcuts { get; set; } = false;
         public Dictionary<string, bool> SourceOptions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
         public Dictionary<string, bool> EnabledPlayActions { get; set; } = new Dictionary<string, bool>() { { "Undefined", false } };
         public HashSet<Guid> ManuallyCreatedShortcuts { get; set; } = new HashSet<Guid>();

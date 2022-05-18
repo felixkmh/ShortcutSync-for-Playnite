@@ -40,7 +40,9 @@
     <sys:String x:Key="LOC_SHS_ExcludedGames">Excluded Games:</sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry">Remove Entry</sys:String>
     <sys:String x:Key="LOC_SHS_GameNotFound">Game not found: {0}</sys:String>
-
+    <sys:String x:Key="LOC_SHS_PrefixShortcuts">Prefix Shortcuts with Play/Install</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixInstall">Install {0}</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixPlay">Play {0}</sys:String>
     <!--Tool Tips-->
     <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">The path at which the shortcuts will be created. Ideally an empty folder inside the start menu, only used for this extension.</sys:String>
     <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip">If enabled, only shortcuts to installed games are created and shortcuts to uninstalled games will be removed on update.</sys:String>
