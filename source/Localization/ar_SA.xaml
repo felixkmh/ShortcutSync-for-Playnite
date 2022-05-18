@@ -40,7 +40,9 @@
     <sys:String x:Key="LOC_SHS_ExcludedGames">الألعاب المستثناة:</sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry">إزالة المدخل</sys:String>
     <sys:String x:Key="LOC_SHS_GameNotFound">اللعبة غير موجودة: {0}</sys:String>
-
+    <sys:String x:Key="LOC_SHS_PrefixShortcuts"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixInstall"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixPlay"></sys:String>
     <!--Tool Tips-->
     <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">المسار الذي سيتم إنشاء الاختصارات فيه. عادة ما يكون مجلد فارغ داخل قائمة البدء، يستخدم فقط لهذاه الإضافة.</sys:String>
     <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip">في حالة تفعيله، يتم إنشاء الاختصارات فقط للألعاب المثبتة و إزالة إختصارات الألعاب غير المثبتة عند التحديث.</sys:String>
