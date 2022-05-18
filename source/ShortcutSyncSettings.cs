@@ -70,7 +70,10 @@ namespace ShortcutSync
                 var type = savedSettings.GetType();
                 foreach(var prop in type.GetProperties())
                 {
-                    prop.SetValue(this, prop.GetValue(savedSettings));
+                    if (prop.CanWrite)
+                    {
+                        prop.SetValue(this, prop.GetValue(savedSettings));
+                    }
                 }
             }
         }
