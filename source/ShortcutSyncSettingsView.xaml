@@ -29,6 +29,7 @@
                 <CheckBox Content="{DynamicResource LOC_SHS_FadeEdges}" MinWidth="150" IsChecked="{Binding FadeBottom}" HorizontalAlignment="Left" Margin="0,2" ToolTip="{DynamicResource LOC_SHS_FadeEdgesTooltip}"/>
                 <CheckBox Content="{DynamicResource LOC_SHS_PrefixShortcutsWithPlay}" MinWidth="150" IsChecked="{Binding PrefixShortcutsPlay}" HorizontalAlignment="Left" Margin="0,2"/>
                 <CheckBox Content="{DynamicResource LOC_SHS_PrefixShortcutsWithInstall}" MinWidth="150" IsChecked="{Binding PrefixShortcutsInstall}" HorizontalAlignment="Left" Margin="0,2"/>
+                <CheckBox Content="{DynamicResource LOC_SHS_OpenUninstalledGames}" MinWidth="150" IsChecked="{Binding OpenUninstalled}" HorizontalAlignment="Left" Margin="0,2" ToolTip="{DynamicResource LOC_SHS_OpenUninstalledGamesTooltip}"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <StackPanel>

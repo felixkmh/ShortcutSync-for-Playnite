@@ -38,6 +38,8 @@ namespace ShortcutSync
         public bool PrefixShortcutsPlay { get; set; } = false;
         [QuickSearch.Attributes.GenericOption("LOC_SHS_PrefixShortcutsWithInstall")]
         public bool PrefixShortcutsInstall { get; set; } = false;
+        [QuickSearch.Attributes.GenericOption("LOC_SHS_OpenUninstalledGames", Description = "LOC_SHS_OpenUninstalledGamesTooltip")]
+        public bool OpenUninstalled { get; set; } = false;
 
         [Playnite.SDK.Data.DontSerialize]
         public ShortcutSync.Prefix PrefixFlags => 

@@ -25,7 +25,7 @@ namespace ShortcutSync
         public static readonly ILogger logger = LogManager.GetLogger();
         public static ShortcutSync Instance { get; private set; }
         private TaskQueue backgroundTasks = new TaskQueue();
-        private ShortcutSyncSettings settings { get; set; }
+        internal ShortcutSyncSettings settings { get; set; }
         public ShortcutSyncSettingsView settingsView { get; set; }
         private Dictionary<string, IList<Guid>> shortcutNameToGameId { get; set; } = new Dictionary<string, IList<Guid>>();
         private Dictionary<Guid, Shortcut<Game>> existingShortcuts { get; set; } = new Dictionary<Guid, Shortcut<Game>>();
@@ -404,7 +404,9 @@ namespace ShortcutSync
                 }
                 TiledShortcut.FadeTileEdge = settingsSnapshot.FadeBottom;
                 UpdateShortcutDicts(settingsSnapshot.ShortcutPath, settingsSnapshot);
-                UpdateShortcuts(PlayniteApi.Database.Games, settingsSnapshot, settingsSnapshot.FadeBottom != previousSettings.FadeBottom, true);
+                var forceUpdate = (settingsSnapshot.FadeBottom != previousSettings.FadeBottom) || 
+                                   (settingsSnapshot.OpenUninstalled != previousSettings.OpenUninstalled);
+                UpdateShortcuts(PlayniteApi.Database.Games, settingsSnapshot, forceUpdate, true);
                 previousSettings = settingsSnapshot;
             });
         }
@@ -900,6 +902,7 @@ namespace ShortcutSync
             if (!Directory.Exists(folderPath)) return;
 
             var files = Directory.GetFiles(folderPath, shortcutName + "*.lnk", SearchOption.AllDirectories);
+            var stale = new List<Shortcut<Game>>();
             foreach (var file in files)
             {
                 var lnk = OpenLnk(file);
@@ -921,8 +924,17 @@ namespace ShortcutSync
                             shortcutNameToGameId.Add(safeGameName, new List<Guid>());
                         }
                         shortcutNameToGameId[safeGameName].AddMissing(gameId);
+                    } else
+                    {
+                        stale.Add(new TiledShortcut(new Game { Id = gameId }, file, GetLauncherScriptPath(), GetLauncherScriptIconsPath()));
                     }
+
                 }
+            }
+
+            foreach(var shortcut in stale)
+            {
+                shortcut.Remove();
             }
         }
 

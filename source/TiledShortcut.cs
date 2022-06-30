@@ -283,10 +283,11 @@ namespace ShortcutSync
         protected virtual string CreateVbsLauncher()
         {
             string fullPath = GetLauncherPath();
+            string action = (TargetObject.IsInstalled || !ShortcutSync.Instance.settings.OpenUninstalled) ? "start" : "showgame";
             string script =
                 "Dim prefix, id\n" +
 
-                "prefix = \"playnite://playnite/start/\"\n" +
+                $"prefix = \"playnite://playnite/{action}/\"\n" +
                 $"id = \"{TargetObject.Id}\"\n" +
 
                 "Set WshShell = WScript.CreateObject(\"WScript.Shell\")\n" +
