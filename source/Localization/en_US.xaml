@@ -44,6 +44,8 @@
     <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall">Prefix uninstalled Games with "Install"</sys:String>
     <sys:String x:Key="LOC_SHS_PrefixInstall">Install {0}</sys:String>
     <sys:String x:Key="LOC_SHS_PrefixPlay">Play {0}</sys:String>
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGames">Open game details if a game is not installed</sys:String>
+    
     <!--Tool Tips-->
     <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">The path at which the shortcuts will be created. Ideally an empty folder inside the start menu, only used for this extension.</sys:String>
     <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip">If enabled, only shortcuts to installed games are created and shortcuts to uninstalled games will be removed on update.</sys:String>
@@ -53,7 +55,7 @@
     <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip">If enabled, shortcuts will be placed into a subfolder inside the Shortcut Path named after their Source.</sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdgesTooltip">If enabled, the bottom of the tile background images are faded out to improve readability of the title, if the title is visible.</sys:String>
     <sys:String x:Key="LOC_SHS_EnabledTooltip">If enabled, shortcuts to games from {0} are created and maintained on update.</sys:String>
-
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip">When opening the shortcut for a game that is not installed, the game details view is opened instead of triggering the installation.</sys:String>
     <!--Buttons-->
     <sys:String x:Key="LOC_SHS_SelectShortcutPathButton">Select folder</sys:String>
 	
