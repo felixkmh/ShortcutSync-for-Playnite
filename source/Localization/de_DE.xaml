@@ -44,6 +44,8 @@
     <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall">Nicht installierten Spielen &quot;Installiere&quot; anhängen</sys:String>
     <sys:String x:Key="LOC_SHS_PrefixInstall">{0} installieren</sys:String>
     <sys:String x:Key="LOC_SHS_PrefixPlay">{0} spielen</sys:String>
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGames">Spieldetails öffnen, wenn ein Spiel nicht installiert ist</sys:String>
+    
     <!--Tool Tips-->
     <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">Der Pfad in dem die Verknüpfungen angelegt werden. Idealerweise ein leeres Verzeichnis im Start-Menü.</sys:String>
     <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip">Wenn aktiv, werden nur Verknüpfungen zu installierten Spielen erstellt und Verknüpfungen zu deinstallierten Spielen werden bei Aktualisierung entfernt.</sys:String>
@@ -53,7 +55,7 @@
     <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip">Wenn aktiv, werden Verknüpfungen in separate Unterverzeichnissen pro Quelle erstellt. </sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdgesTooltip">Wenn aktiv, wird das Hintergrundbild der Kacheln zur Unterkante hin ausgeblendet, falls der Titel sichtbar ist.</sys:String>
     <sys:String x:Key="LOC_SHS_EnabledTooltip">Wenn aktiv, werden Verknüpfungen zu {0} Spielen erstellt und aktualisiert.</sys:String>
-
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip"></sys:String>
     <!--Buttons-->
     <sys:String x:Key="LOC_SHS_SelectShortcutPathButton">Verzeichnis wählen</sys:String>
 	

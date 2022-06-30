@@ -44,6 +44,8 @@
     <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixInstall"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixPlay"></sys:String>
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGames"></sys:String>
+    
     <!--Tool Tips-->
     <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">المسار الذي سيتم إنشاء الاختصارات فيه. عادة ما يكون مجلد فارغ داخل قائمة البدء، يستخدم فقط لهذاه الإضافة.</sys:String>
     <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip">في حالة تفعيله، يتم إنشاء الاختصارات فقط للألعاب المثبتة و إزالة إختصارات الألعاب غير المثبتة عند التحديث.</sys:String>
@@ -53,7 +55,7 @@
     <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip">في حالة التمكين، سيتم وضع الاختصارات في مجلد فرعي داخل مسار الاختصار المسمى باسم المصدر.</sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdgesTooltip">في حالة التمكين ، فإن الجزء السفلي من صور خلفية البلاط يكون باهتًا لتحسين إمكانية قراءة العنوان، إذا كان العنوان مرئيًا.</sys:String>
     <sys:String x:Key="LOC_SHS_EnabledTooltip">في حالة التمكين، يتم إنشاء اختصارات للألعاب من {0} والحفاظ عليها عند التحديث.</sys:String>
-
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip"></sys:String>
     <!--Buttons-->
     <sys:String x:Key="LOC_SHS_SelectShortcutPathButton">اختر مجلدا</sys:String>
 	
