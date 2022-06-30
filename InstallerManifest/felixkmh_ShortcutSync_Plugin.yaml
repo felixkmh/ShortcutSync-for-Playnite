@@ -1,5 +1,13 @@
 AddonId: felixkmh_ShortcutSync_Plugin
 Packages:
+  - Version: 2.5.0
+    RequiredApiVersion: 6.0.0
+    ReleaseDate: 2022-07-01
+    PackageUrl: https://github.com/felixkmh/ShortcutSync-for-Playnite/releases/download/v2.5.0/felixkmh_ShortcutSync_Plugin_2_5_0.pext
+    Changelog:
+      - Added option to open game details for games that are not installed instead of triggering installation
+      - Shortcuts to no longer existing games will be cleaned up
+      - Localization updates
   - Version: 2.4.0
     RequiredApiVersion: 6.0.0
     ReleaseDate: 2022-05-18
