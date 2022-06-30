@@ -55,7 +55,7 @@
     <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip">Wenn aktiv, werden Verknüpfungen in separate Unterverzeichnissen pro Quelle erstellt. </sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdgesTooltip">Wenn aktiv, wird das Hintergrundbild der Kacheln zur Unterkante hin ausgeblendet, falls der Titel sichtbar ist.</sys:String>
     <sys:String x:Key="LOC_SHS_EnabledTooltip">Wenn aktiv, werden Verknüpfungen zu {0} Spielen erstellt und aktualisiert.</sys:String>
-    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip">Wenn die Verknüpfung für ein nicht installiertes Spiel geöffnet wird, wird die Detailansicht des Spiels geöffnet, anstatt die Installation auszulösen.</sys:String>
     <!--Buttons-->
     <sys:String x:Key="LOC_SHS_SelectShortcutPathButton">Verzeichnis wählen</sys:String>
 	
