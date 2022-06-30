@@ -44,6 +44,8 @@
     <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixInstall"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixPlay"></sys:String>
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGames"></sys:String>
+    
     <!--Tool Tips-->
     <sys:String x:Key="LOC_SHS_ShortcutPathTooltip"></sys:String>
     <sys:String x:Key="LOC_SHS_InstalledOnlyTooltip"></sys:String>
@@ -53,7 +55,7 @@
     <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip"></sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdgesTooltip"></sys:String>
     <sys:String x:Key="LOC_SHS_EnabledTooltip"></sys:String>
-
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip"></sys:String>
     <!--Buttons-->
     <sys:String x:Key="LOC_SHS_SelectShortcutPathButton"></sys:String>
 	
