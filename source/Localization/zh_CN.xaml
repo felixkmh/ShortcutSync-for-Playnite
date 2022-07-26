@@ -40,11 +40,11 @@
     <sys:String x:Key="LOC_SHS_ExcludedGames">排除的游戏：</sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry">移除条目</sys:String>
     <sys:String x:Key="LOC_SHS_GameNotFound">游戏未找到：{0}</sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixInstall"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixPlay"></sys:String>
-    <sys:String x:Key="LOC_SHS_OpenUninstalledGames"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay">为已安装游戏使用前缀“游玩”</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall">为未安装游戏使用前缀“安装”</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixInstall">安装 {0}</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixPlay">游玩 {0}</sys:String>
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGames">若游戏未安装，打开游戏详情</sys:String>
     
     <!--Tool Tips-->
     <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">创建快捷方式的路径。推荐在开始菜单中创建一个专用于此扩展的文件夹。</sys:String>
@@ -55,7 +55,7 @@
     <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip">若启用，快捷方式将被放入其路径中的一个以来源命名的子文件夹。</sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdgesTooltip">若启用，将标题可见磁贴的背景图像底部淡出，以改善标题的可读性。</sys:String>
     <sys:String x:Key="LOC_SHS_EnabledTooltip">如果启用，则为来自 {0} 的游戏创建快捷方式并在更新时维护。</sys:String>
-    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip">当打开一个未安装游戏的快捷方式时，会打开游戏详情视图，而非触发安装。</sys:String>
     <!--Buttons-->
     <sys:String x:Key="LOC_SHS_SelectShortcutPathButton">选择文件夹</sys:String>
 	
