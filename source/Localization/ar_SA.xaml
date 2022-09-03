@@ -40,11 +40,11 @@
     <sys:String x:Key="LOC_SHS_ExcludedGames">الألعاب المستثناة:</sys:String>
     <sys:String x:Key="LOC_SHS_RemoveEntry">إزالة المدخل</sys:String>
     <sys:String x:Key="LOC_SHS_GameNotFound">اللعبة غير موجودة: {0}</sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixInstall"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixPlay"></sys:String>
-    <sys:String x:Key="LOC_SHS_OpenUninstalledGames"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay">بادئة الألعاب المثبتة مع &quot;تشغيل&quot;</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall">بادئة الألعاب غير المثبتة مع &quot;تثبيت&quot;</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixInstall">تثبيت {0}</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixPlay">العب {0}</sys:String>
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGames">فتح تفاصيل اللعبة إذا لم يتم تثبيت اللعبة</sys:String>
     
     <!--Tool Tips-->
     <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">المسار الذي سيتم إنشاء الاختصارات فيه. عادة ما يكون مجلد فارغ داخل قائمة البدء، يستخدم فقط لهذاه الإضافة.</sys:String>
@@ -55,7 +55,7 @@
     <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip">في حالة التمكين، سيتم وضع الاختصارات في مجلد فرعي داخل مسار الاختصار المسمى باسم المصدر.</sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdgesTooltip">في حالة التمكين ، فإن الجزء السفلي من صور خلفية البلاط يكون باهتًا لتحسين إمكانية قراءة العنوان، إذا كان العنوان مرئيًا.</sys:String>
     <sys:String x:Key="LOC_SHS_EnabledTooltip">في حالة التمكين، يتم إنشاء اختصارات للألعاب من {0} والحفاظ عليها عند التحديث.</sys:String>
-    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip">عند فتح اختصار لعبة غير مثبتة، يتم فتح عرض تفاصيل اللعبة بدلاً من بدء التثبيت.</sys:String>
     <!--Buttons-->
     <sys:String x:Key="LOC_SHS_SelectShortcutPathButton">اختر مجلدا</sys:String>
 	
