@@ -42,9 +42,9 @@
     <sys:String x:Key="LOC_SHS_GameNotFound">اللعبة غير موجودة: {0}</sys:String>
     <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixInstall"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixPlay"></sys:String>
-    <sys:String x:Key="LOC_SHS_OpenUninstalledGames"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixInstall">تثبيت {0}</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixPlay">العب {0}</sys:String>
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGames">فتح تفاصيل اللعبة إذا لم يتم تثبيت اللعبة</sys:String>
     
     <!--Tool Tips-->
     <sys:String x:Key="LOC_SHS_ShortcutPathTooltip">المسار الذي سيتم إنشاء الاختصارات فيه. عادة ما يكون مجلد فارغ داخل قائمة البدء، يستخدم فقط لهذاه الإضافة.</sys:String>
