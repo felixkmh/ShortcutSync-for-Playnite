@@ -19,31 +19,31 @@
     <sys:String x:Key="LOC_SHS_RemoveFromExclusionList"></sys:String>
     <sys:String x:Key="LOC_SHS_OpenManifest"></sys:String>
     <sys:String x:Key="LOC_SHS_ShowTitleOnTile"></sys:String>
-    <sys:String x:Key="LOC_SHS_EditShortcuts"></sys:String>
-    <sys:String x:Key="LOC_SHS_On"></sys:String>
-    <sys:String x:Key="LOC_SHS_Off"></sys:String>
+    <sys:String x:Key="LOC_SHS_EditShortcuts">Kısayolları düzenle</sys:String>
+    <sys:String x:Key="LOC_SHS_On">Açık</sys:String>
+    <sys:String x:Key="LOC_SHS_Off">Kapalı</sys:String>
     <sys:String x:Key="LOC_SHS_ResetShortcuts"></sys:String>
 	
 	<!--Settings-->
 	<!--Labels-->
-	<sys:String x:Key="LOC_SHS_ShortcutPath"></sys:String>
-    <sys:String x:Key="LOC_SHS_InstalledOnly"></sys:String>
-    <sys:String x:Key="LOC_SHS_ForceUpdate"></sys:String>
-    <sys:String x:Key="LOC_SHS_UpdateOnStartUp"></sys:String>
-    <sys:String x:Key="LOC_SHS_ExcludeHidden"></sys:String>
-    <sys:String x:Key="LOC_SHS_SeparateFolders"></sys:String>
+	<sys:String x:Key="LOC_SHS_ShortcutPath">Kısayol Yolu:</sys:String>
+    <sys:String x:Key="LOC_SHS_InstalledOnly">Yalnızca Yüklü</sys:String>
+    <sys:String x:Key="LOC_SHS_ForceUpdate">Tam Güncellemeye Zorla</sys:String>
+    <sys:String x:Key="LOC_SHS_UpdateOnStartUp">Başlangıçta  Güncelle</sys:String>
+    <sys:String x:Key="LOC_SHS_ExcludeHidden">Gizli hariç</sys:String>
+    <sys:String x:Key="LOC_SHS_SeparateFolders">Her Kaynak İçin Ayrı Klasör Kullanın:</sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdges"></sys:String>
     <sys:String x:Key="LOC_SHS_PerSourceOptions"></sys:String>
-    <sys:String x:Key="LOC_SHS_Sources"></sys:String>
-    <sys:String x:Key="LOC_SHS_Enabled"></sys:String>
+    <sys:String x:Key="LOC_SHS_Sources">Kaynak:</sys:String>
+    <sys:String x:Key="LOC_SHS_Enabled">Etkinleştir</sys:String>
     <sys:String x:Key="LOC_SHS_ManualShortcuts"></sys:String>
     <sys:String x:Key="LOC_SHS_ExcludedGames"></sys:String>
-    <sys:String x:Key="LOC_SHS_RemoveEntry"></sys:String>
-    <sys:String x:Key="LOC_SHS_GameNotFound"></sys:String>
+    <sys:String x:Key="LOC_SHS_RemoveEntry">Girişi Kaldır</sys:String>
+    <sys:String x:Key="LOC_SHS_GameNotFound">Oyun bulunamadı: {0}</sys:String>
     <sys:String x:Key="LOC_SHS_PrefixShortcutsWithPlay"></sys:String>
     <sys:String x:Key="LOC_SHS_PrefixShortcutsWithInstall"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixInstall"></sys:String>
-    <sys:String x:Key="LOC_SHS_PrefixPlay"></sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixInstall">{0} Kur</sys:String>
+    <sys:String x:Key="LOC_SHS_PrefixPlay">Oyna {0}</sys:String>
     <sys:String x:Key="LOC_SHS_OpenUninstalledGames"></sys:String>
     
     <!--Tool Tips-->
@@ -55,8 +55,8 @@
     <sys:String x:Key="LOC_SHS_SeparateFoldersTooltip"></sys:String>
     <sys:String x:Key="LOC_SHS_FadeEdgesTooltip"></sys:String>
     <sys:String x:Key="LOC_SHS_EnabledTooltip"></sys:String>
-    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip"></sys:String>
+    <sys:String x:Key="LOC_SHS_OpenUninstalledGamesTooltip">Yüklü olmayan bir oyun için kısayol açıldığında, yüklemeyi tetiklemek yerine oyun ayrıntıları görünümü açılır.</sys:String>
     <!--Buttons-->
-    <sys:String x:Key="LOC_SHS_SelectShortcutPathButton"></sys:String>
+    <sys:String x:Key="LOC_SHS_SelectShortcutPathButton">Klasör seçin</sys:String>
 	
 </ResourceDictionary>
